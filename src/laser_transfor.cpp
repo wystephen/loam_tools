@@ -1,5 +1,4 @@
 #include "laser_geometry/laser_geometry.h"
-//#include "laser_geometry.cpp"
 #include "tf/tf.h"
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
@@ -13,7 +12,6 @@
 ros::Subscriber sub;
 ros::Publisher pub;
 
-//serial::Serial::Serial("/dev/ttyUSB0",115200,10,eightbits,parity_none,stopbits_one,flowcontrol_none);
 
 boost::asio::io_service io;
 boost::asio::serial_port sp(io,"/dev/ttyUSB0");
