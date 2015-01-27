@@ -24,9 +24,19 @@ std::fstream fout;
 double time_before,time_now;
 double sum_before,sum_now;
 sensor_msgs::PointCloud2 pointcloud;
+bool firsttime(true);
 
 void lCallback(const sensor_msgs::PointCloud2::ConstPtr &tfmsg)
 {
+    if(firsttime)
+    {
+        pointcloud = &tfmsg;
+    }
+    pointcloud.data += tfmsg->data;
+   pointcloud.header = tfmsg->header;
+   pointcloud.height =tfmsg->height;
+   pointcloud.width += tfmsg->width;
+    pub.publish(pointcloud);
 
 }
 
