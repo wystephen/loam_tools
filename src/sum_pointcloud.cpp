@@ -28,14 +28,14 @@ bool firsttime(true);
 
 void lCallback(const sensor_msgs::PointCloud2::ConstPtr &tfmsg)
 {
-    if(firsttime)
-    {
-        pointcloud = &tfmsg;
-    }
-    pointcloud.data += tfmsg->data;
-   pointcloud.header = tfmsg->header;
-   pointcloud.height =tfmsg->height;
-   pointcloud.width += tfmsg->width;
+//    if(firsttime)
+//    {
+//        pointcloud = *tfmsg;
+//    }
+//    //pointcloud.datatfmsg->data;
+//   pointcloud.header = tfmsg->header;
+//   pointcloud.height =tfmsg->height;
+//   pointcloud.width += tfmsg->width;
     pub.publish(pointcloud);
 
 }
@@ -48,8 +48,8 @@ int main(int argc,char **argv)
     ros::NodeHandle n;
     ROS_INFO("Now,start the node succeful!");
 
-   sub = n.subscribe("/sync_scan_cloud_filtered",1,lcallback);
-pub=n.advertise<sensor_msgs::PointCloud2>("sum_of_pointcloud",1);
+//   sub = n.subscribe("/sync_scan_cloud_filtered",1,lcallback);
+//pub=n.advertise<sensor_msgs::PointCloud2>("sum_of_pointcloud",1);
 
     ROS_INFO("step2111");
 
