@@ -23,8 +23,12 @@ std::fstream fout;
 
 double time_before,time_now;
 double sum_before,sum_now;
+sensor_msgs::PointCloud2 pointcloud;
 
+void lCallback(const sensor_msgs::PointCloud2::ConstPtr &tfmsg)
+{
 
+}
 
 
 
@@ -34,24 +38,14 @@ int main(int argc,char **argv)
     ros::NodeHandle n;
     ROS_INFO("Now,start the node succeful!");
 
-
-    //fout.open("/home/home.txt");
-
-
-//    sp.set_option(boost::asio::serial_port::baud_rate(115200));
-//    sp.set_option(boost::asio::serial_port::flow_control());
-//    sp.set_option(boost::asio::serial_port::parity());
-//    sp.set_option(boost::asio::serial_port::stop_bits());
-//    sp.set_option(boost::asio::serial_port::character_size(8));
-
-
+   sub = n.subscribe("/sync_scan_cloud_filtered",1,lcallback);
+pub=n.advertise<sensor_msgs::PointCloud2>("sum_of_pointcloud",1);
 
     ROS_INFO("step2111");
 
 
 
 
-    //sub=n.subscribe("first",1,lCallback);
 
     ros::spin();
     return 0;
