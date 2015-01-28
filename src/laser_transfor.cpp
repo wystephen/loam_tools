@@ -96,7 +96,7 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
                     if(sum<721 )
                     {
                         isok = true;
-                        std::cout << "sumis:::::::::::::::::::::::::::"<<sum<<"(a,b)"<<a<<b<<std::endl;
+                        std::cout << "sumis:::::::::::::::::::::::::::"<<sum<<"(a,b)"<<a<<","<<b<<std::endl;
                         sum_now = sum;
                         break;
                     }
@@ -119,7 +119,10 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
 
 
     int nsum;
+    double avg_v;
     std::cout << "endtime is :;:::"<<endtime <<std::endl;
+    avg_v = (((sum_before - sum_now)/(time_before - time_now)))/720;
+    std::cout <<"avg_v="<<avg_v<<std::endl;
     if(sum >= last_sum)
     {
         nsum = sum - (endtime - 0.01) * std::abs((sum_before - sum_now)/(time_before - time_now));//700;//(sum - last_sum)/(endtime - last_endtime);//720;
@@ -229,16 +232,17 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
    int dist_idx = pcl::getFieldIndex(pointcloud_tmp,"distance");
    //xyz_offset
    Eigen::Array4i xyz_offset (pointcloud_tmp.fields[x_idx].offset,pointcloud_tmp.fields[y_idx].offset,pointcloud_tmp.fields[z_idx].offset,0);
-
+    double ntheta;
    for (size_t i = 0;i<pointcloud_tmp.width * pointcloud_tmp.height;++i)
    {
+       ntheta = theta;
        transform(0,0)=1;
-       transform(1,1)=cos(theta);
-       transform(1,2)=-sin(theta);
-       transform(2,1)=sin(theta);
-       transform(2,2)=cos(theta);
-       transform(2,3)=cos(theta) * 0.035;
-       transform(1,3)=-sin(theta) * 0.035;
+       transform(1,1)=cos(ntheta);
+       transform(1,2)=-sin(ntheta);
+       transform(2,1)=sin(ntheta);
+       transform(2,2)=cos(ntheta);
+       transform(2,3)=cos(ntheta) * 0.04;
+       transform(1,3)=-sin(theta) * 0.04;
        transform(3,3) = 1;
        Eigen::Vector4f pt(*(float *)&pointcloud_tmp.data[xyz_offset[0]],*(float*)&pointcloud_tmp.data[xyz_offset[1]],*(float*)&pointcloud_tmp.data[xyz_offset[2]],1);
        Eigen::Vector4f pt_out;
