@@ -30,7 +30,7 @@ double sum_before,sum_now;
 void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
 {
 
-   // double gettime = ros::Time::now().toSec();
+    // double gettime = ros::Time::now().toSec();
 
     //ROS_INFO("1");
     laser_geometry::LaserProjection p;
@@ -57,7 +57,7 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     sum = 0;
     int times(0);
     double endtime;
-    while(isok==false)
+    while(isok==false)//ver 1.0--read
     {
         memset(bufread,0,10);
         //bool err(false);
@@ -69,12 +69,12 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
         }
         endtime = ros::Time::now().toSec();
         time_now = endtime;
-         for(int i =0 ;i< 10;i++)
-         {
-             bufread[i] =  bufread[i] & 0xff ;
-             printf("%x--- ",bufread[i]);
+        for(int i =0 ;i< 10;i++)
+        {
+            bufread[i] =  bufread[i] & 0xff ;
+            printf("%x--- ",bufread[i]);
         }
-         //std::cout << std::endl;
+        //std::cout << std::endl;
 
         for(int i = 0;i < 10;i++)
         {
@@ -155,16 +155,16 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     float theta=3.1415926 * w / 180;
     std::cout <<"theta:::::::"<<theta<<std::endl;
 
-//    Tm1(0,0)=cos(theta);
-//    Tm1(0,1)=-sin(theta);
-//    Tm1(1,0)=sin(theta);
-//    Tm1(1,1)=cos(theta);
-//    Tm1(2,3)=2.5;
-//    Tm1(1,3)=2.5;
-//    Tm1(3,3)=1;
+    //    Tm1(0,0)=cos(theta);
+    //    Tm1(0,1)=-sin(theta);
+    //    Tm1(1,0)=sin(theta);
+    //    Tm1(1,1)=cos(theta);
+    //    Tm1(2,3)=2.5;
+    //    Tm1(1,3)=2.5;
+    //    Tm1(3,3)=1;
 
 
-   //ROS_INFO("%f",theta);
+    //ROS_INFO("%f",theta);
     //ROS_INFO("w is:%f",w);
 
     Tm(0,0)=1;
@@ -187,123 +187,131 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     Tm2(0,0)=1;
     Tm2(1,2)=1;
     Tm2(2,1)=-1;
-   // ROS_INFO("4");
+    // ROS_INFO("4");
     //z +180
     Tm1(0,0)=-1;
     Tm1(1,1)=-1;
     Tm1(2,2)=1;
 
 
-   std::cout<< "pointcloud data:"<<pointcloud_tmp.data[20]<<"   size:"<<pointcloud_tmp.data.size()<<std::endl;
+    std::cout<< "pointcloud data:"<<pointcloud_tmp.data[20]<<"   size:"<<pointcloud_tmp.data.size()<<std::endl;
 
-   std::cout <<"list"<<pcl::getFieldsList(pointcloud_tmp)<<std::endl;
-   //get the really y z of the point
-   ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-   /// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-   ///
-   ///
-   ///
-   ///
-   ///
-   ///
+    std::cout <<"list"<<pcl::getFieldsList(pointcloud_tmp)<<std::endl;
+    //get the really y z of the point
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ///
+    ///
+    ///
+    ///
+    ///
+    ///
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-//   //out
-  sensor_msgs::PointCloud2 out;
-//   //define a transfomr (may same as Tm)
-  Eigen::Matrix4f transform = Eigen::Matrix4f::Identity();
-  transform = Tm;
-//   transform(0,0)=1;
-//   transform(1,1)=cos(theta);
-//   transform(1,2)=-sin(theta);
-//   transform(2,1)=sin(theta);
-//   transform(2,2)=cos(theta);
-//   transform(2,3)=cos(theta) * 0.035;
-//   transform(1,3)=-sin(theta) * 0.035;
-//   transform(3,3) = 1;
-   // Get X-Y-Z indices;
-   int x_idx = pcl::getFieldIndex(pointcloud_tmp,"x");
-   int y_idx = pcl::getFieldIndex(pointcloud_tmp,"y");
-   int z_idx = pcl::getFieldIndex(pointcloud_tmp,"z");
+    //   //out
+    sensor_msgs::PointCloud2 out;
+    //   //define a transfomr (may same as Tm)
+    Eigen::Matrix4f transform = Eigen::Matrix4f::Identity();
+    transform = Tm;
+    //   transform(0,0)=1;
+    //   transform(1,1)=cos(theta);
+    //   transform(1,2)=-sin(theta);
+    //   transform(2,1)=sin(theta);
+    //   transform(2,2)=cos(theta);
+    //   transform(2,3)=cos(theta) * 0.035;
+    //   transform(1,3)=-sin(theta) * 0.035;
+    //   transform(3,3) = 1;
+    // Get X-Y-Z indices;
+    int x_idx = pcl::getFieldIndex(pointcloud_tmp,"x");
+    int y_idx = pcl::getFieldIndex(pointcloud_tmp,"y");
+    int z_idx = pcl::getFieldIndex(pointcloud_tmp,"z");
 
 
-   //check if distance is available
-   int dist_idx = pcl::getFieldIndex(pointcloud_tmp,"distance");
-   //xyz_offset
-   Eigen::Array4i xyz_offset (pointcloud_tmp.fields[x_idx].offset,pointcloud_tmp.fields[y_idx].offset,pointcloud_tmp.fields[z_idx].offset,0);
+    //check if distance is available
+    int dist_idx = pcl::getFieldIndex(pointcloud_tmp,"distance");
+    //xyz_offset
+    Eigen::Array4i xyz_offset (pointcloud_tmp.fields[x_idx].offset,pointcloud_tmp.fields[y_idx].offset,pointcloud_tmp.fields[z_idx].offset,0);
     double ntheta;
-   for (size_t i = 0;i<pointcloud_tmp.width * pointcloud_tmp.height;++i)
-   {
-       ntheta = theta;
-       transform(0,0)=1;
-       transform(1,1)=cos(ntheta);
-       transform(1,2)=-sin(ntheta);
-       transform(2,1)=sin(ntheta);
-       transform(2,2)=cos(ntheta);
-       transform(2,3)=cos(ntheta) * 0.04;
-       transform(1,3)=-sin(theta) * 0.04;
-       transform(3,3) = 1;
-       Eigen::Vector4f pt(*(float *)&pointcloud_tmp.data[xyz_offset[0]],*(float*)&pointcloud_tmp.data[xyz_offset[1]],*(float*)&pointcloud_tmp.data[xyz_offset[2]],1);
-       Eigen::Vector4f pt_out;
+    for (size_t i = 0;i<pointcloud_tmp.width * pointcloud_tmp.height;++i)
+    {
 
-       bool max_range_point = false;
-       int distance_ptr_offset = i * pointcloud_tmp.point_step + pointcloud_tmp.fields[dist_idx].offset;
-       float * distance_ptr = (dist_idx<0?NULL:(float*)(&pointcloud_tmp.data[distance_ptr_offset]));
-       if(!std::isfinite(pt[0]) || !std::isfinite(pt[1]) || !std::isfinite(pt[2]))
-       {
-           if (distance_ptr == NULL || !std::isfinite(*distance_ptr))   //Invalid point
-           {
-               pt_out = pt;
-           }else{//max range point
-               pt[0] = *distance_ptr; //Replace x with the x value saved in distance
-               pt_out = transform * pt;//
-               max_range_point = true;
-           }
-       }else{
-           pt_out = transform * pt;
-       }
-
-       if(max_range_point)
-       {
-           //Save x. value in distance again
-           *(float*)(&pointcloud_tmp.data[distance_ptr_offset]) = pt_out[0];
-           pt_out[0] = std::numeric_limits<float> ::quiet_NaN();
-       }
-
-       memcpy(&pointcloud_tmp.data[xyz_offset[0]],&pt_out[0], sizeof(float));
-       memcpy(&pointcloud_tmp.data[xyz_offset[1]],&pt_out[1], sizeof(float));
-       memcpy(&pointcloud_tmp.data[xyz_offset[2]],&pt_out[2], sizeof(float));
-
-       xyz_offset += pointcloud_tmp.point_step;
-
-
-   }
+        Eigen::Vector4f pt(*(float *)&pointcloud_tmp.data[xyz_offset[0]],*(float*)&pointcloud_tmp.data[xyz_offset[1]],*(float*)&pointcloud_tmp.data[xyz_offset[2]],1);
+        Eigen::Vector4f pt_out;
 
 
 
-   //check if the viewpoint infomation is persent
-  // int vp_idx = pcl::getFieldIndex(pointcloud_tmp,"vp_x");
-  // if()
+
+        ntheta = theta-((90-atan(pt[0] / pt[1]))/270*0.025*avg_v);//-;
+        transform(0,0)=1;
+        transform(1,1)=cos(ntheta);
+        transform(1,2)=-sin(ntheta);
+        transform(2,1)=sin(ntheta);
+        transform(2,2)=cos(ntheta);
+        transform(2,3)=cos(ntheta) * 0.04;
+        transform(1,3)=-sin(theta) * 0.04;
+        transform(3,3) = 1;
 
 
-   /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-   /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-   ///
-   ///
-   ///
 
-   // pcl_ros::transformPointCloud(Tm,pointcloud_tmp,pointcloud_tmp);
+
+        bool max_range_point = false;
+        int distance_ptr_offset = i * pointcloud_tmp.point_step + pointcloud_tmp.fields[dist_idx].offset;
+        float * distance_ptr = (dist_idx<0?NULL:(float*)(&pointcloud_tmp.data[distance_ptr_offset]));
+        if(!std::isfinite(pt[0]) || !std::isfinite(pt[1]) || !std::isfinite(pt[2]))
+        {
+            if (distance_ptr == NULL || !std::isfinite(*distance_ptr))   //Invalid point
+            {
+                pt_out = pt;
+            }else{//max range point
+                pt[0] = *distance_ptr; //Replace x with the x value saved in distance
+                pt_out = transform * pt;//
+                max_range_point = true;
+            }
+        }else{
+            pt_out = transform * pt;
+        }
+
+        if(max_range_point)
+        {
+            //Save x. value in distance again
+            *(float*)(&pointcloud_tmp.data[distance_ptr_offset]) = pt_out[0];
+            pt_out[0] = std::numeric_limits<float> ::quiet_NaN();
+        }
+
+        memcpy(&pointcloud_tmp.data[xyz_offset[0]],&pt_out[0], sizeof(float));
+        memcpy(&pointcloud_tmp.data[xyz_offset[1]],&pt_out[1], sizeof(float));
+        memcpy(&pointcloud_tmp.data[xyz_offset[2]],&pt_out[2], sizeof(float));
+
+        xyz_offset += pointcloud_tmp.point_step;
+
+
+    }
+
+
+
+    //check if the viewpoint infomation is persent
+    // int vp_idx = pcl::getFieldIndex(pointcloud_tmp,"vp_x");
+    // if()
+
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ///
+    ///
+    ///
+
+    // pcl_ros::transformPointCloud(Tm,pointcloud_tmp,pointcloud_tmp);
 
 
     pcl_ros::transformPointCloud(Tm3,pointcloud_tmp,pointcloud_tmp);
-   pcl_ros::transformPointCloud(Tm3,pointcloud_tmp,pointcloud_tmp);
+    pcl_ros::transformPointCloud(Tm3,pointcloud_tmp,pointcloud_tmp);
 
-  pcl_ros::transformPointCloud(Tm2,pointcloud_tmp,pointcloud_tmp);
+    pcl_ros::transformPointCloud(Tm2,pointcloud_tmp,pointcloud_tmp);
     pcl_ros::transformPointCloud(Tm2,pointcloud_tmp,pointcloud_tmp);
 
 
-  //  ROS_INFO("5");
+    //  ROS_INFO("5");
 
     pub.publish(pointcloud_tmp);
 
@@ -345,3 +353,6 @@ int main(int argc,char **argv)
     ros::spin();
     return 0;
 }
+
+
+
