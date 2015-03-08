@@ -3,11 +3,23 @@
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/timer.hpp>
+#include<queue>
 
 #include <pcl_ros/transforms.h>
 #include<pcl_ros/point_cloud.h>
 #include <fstream>
+#include <boost/thread/thread.hpp>
+//a new data struct
+struct sway{
+    double time_stamp;
+    double angle;
+    double avg_v;
+};
 
+struct thread_queue{
+    bool is_locked;
+    std::queue<sway>  time_queue;
+};
 
 ros::Subscriber sub;
 ros::Publisher pub;
@@ -27,6 +39,70 @@ double time_before,time_now;
 double sum_before,sum_now;
 
 static double scan_time_old=0;
+thread_queue time_angle;
+
+void hello()
+{
+    //while read
+    int a(0),b(0),c(0),sum;
+    double time(0.0);
+    sum=0;
+    char bufread[10];
+   while(ros::ok())
+    {
+        memset(bufread,0,10);
+        if((sp.is_open()))
+        {
+            boost::asio::read(sp,boost::asio::buffer(bufread));
+            time=ros::Time::now().toSec();
+
+        }else{
+            ROS_INFO("sp error");
+        }
+        for(int i=0;i<10;i++)
+        {
+            bufread[i] = bufread[i] & 0xff;
+           // printf("%x==",bufread[i]);
+
+        }
+        for(int i=0;i<10;i++)
+        {
+            if((bufread[i] & 0xff)== 0x55)
+            {
+                a = 0xff& bufread[i+1];
+                b = 0xff & bufread[i+2];
+                c = 0xff & bufread[i+3];
+
+                if((b>-1) && (c==((a+b) % 255)))
+                {
+                    sum = a * 256 + b;
+                   // std::cout << sum << std::endl;
+
+                    if(sum < 721)
+                    {
+
+                        while(time_angle.is_locked)
+                        {}
+                        time_angle.is_locked = true;
+                        sway thesway;
+                        thesway.time_stamp=time;
+                        thesway.angle = sum;
+                        thesway.avg_v = -(sum - time_angle.time_queue.front().angle)/
+                                (time - time_angle.time_queue.front().time_stamp)/720.0;
+                        thesway.avg_v = (thesway.avg_v + time_angle.time_queue.front().avg_v) / 2;
+                        time_angle.time_queue.push(thesway);
+                        time_angle.is_locked = false;
+                    }
+                }
+            }
+        }
+    }
+}
+
+//void hello()
+//{
+//    std::cout <<"hello world:"<<std::endl;
+//}
 
 void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
 {
@@ -56,115 +132,34 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     Eigen::Matrix4f Tm1 = Eigen::Matrix4f::Identity();
     Eigen::Matrix4f Tm2 = Eigen::Matrix4f::Identity();
     Eigen::Matrix4f Tm3 = Eigen::Matrix4f::Identity();
-
-    ROS_INFO("2----");
-    // set the w to get angle
-    bool isok(false);
-    char bufread[10];
-    int a(0),b(0),c(0),sum;
-    sum = 0;
-    int times(0);
-    double endtime;
-    while(isok==false)//ver 1.0--read
-    {
-        memset(bufread,0,10);
-        //bool err(false);
-        if((sp.is_open()))
-        {
-            ROS_INFO("2-is open---");
-           boost::asio::read(sp,boost::asio::buffer(bufread));
-        }else{
-            ROS_INFO("sp error");
-        }
-        ROS_INFO("2-0---");
-        endtime = ros::Time::now().toSec();
-        time_now = endtime;
-        for(int i =0 ;i< 10;i++)
-        {
-            bufread[i] =  bufread[i] & 0xff ;
-            printf("%x--- ",bufread[i]);
-        }
-        //std::cout << std::endl;
-
-        ROS_INFO("2-1---");
-        for(int i = 0;i < 10;i++)
-        {
-
-            if((bufread[i] & 0xff) == 0x55)
-            {
-
-                a = 0xff & bufread[i+1];
-                b = 0xff & bufread[i+2];
-                c = 0xff & bufread[i+3];
-
-                //std::cout << bufread[i+1]<< "   " << bufread[i+2]<< std::endl;
-                if( (b > -1) && (c == ((a+b) % 255)) )
-                {
-
-                    if(c != (a+b)) return;
-                    sum = a * 256 + b;
-                    std::cout << sum << std::endl;
-                    ROS_INFO("2--2--");
-
-                    if(sum<721 )
-                    {
-                        isok = true;
-                        std::cout << "sumis:::::::::::::::::::::::::::"<<sum<<"(a,b)"<<a<<","<<b<<std::endl;
-                        sum_now = sum;
-                        break;
-                    }
-
-                }
-            }
-
-        }
-        //if(!isok) return;
-        times++;
-        if(times > 1) return;
-
-    }
-    std::cout << "times = " << times <<std::endl;
-
-    ROS_INFO("3");
-    endtime = endtime - pointcloud_tmp.header.stamp.toSec();
-
-    //recover the sum
-
-    fout <<scan_diff<<","<<point_scan_diff <<","<<(sum/4-90) <<","<<times<<","<<endtime<<",";
-    int nsum;
+    int sum;
     double avg_v;
-    std::cout << "endtime is :;:::"<<endtime <<std::endl;
-    avg_v = (((sum_before - sum_now)/(time_before - time_now)))/720;
-    std::cout <<"avg_v="<<avg_v<<std::endl;
-    if(sum >= last_sum)
+   // ROS_INFO("in the lbackcall");
+    while(time_angle.is_locked)
+    time_angle.is_locked = true;
+    //int step(0);
+    sway last_sway;
+    while((time_angle.time_queue.front().time_stamp < scan_time))
     {
-        nsum = sum - (endtime - 0.01) * std::abs((sum_before - sum_now)/(time_before - time_now));//700;//(sum - last_sum)/(endtime - last_endtime);//720;
-        if(nsum < 0)
-        {
 
-            nsum = -1 * nsum ;
-        }
-    }else{
-        nsum = sum + (endtime - 0.01) * std::abs((sum_before - sum_now)/(time_before - time_now));//700;//(su690m - last_sum)/(endtime - last_endtime);//720;
-        if(nsum > 720)
+        if(time_angle.time_queue.size()>1)
         {
-
-            nsum = 720 - (nsum -720) ;
+        time_angle.time_queue.pop();
+        }else{
+          break;
         }
     }
 
-    time_before = time_now;
-    sum_before = sum_now;
-    fout << (nsum/4 -90 )<<","<<(nsum-sum)/4 <<","<<avg_v<<","<<pointcloud_tmp.width * pointcloud_tmp.height<<std::endl;
-    sum = nsum;
+   // ROS_INFO("get_angle");
 
+    sum = time_angle.time_queue.front().angle; //- (time_angle.time_queue.front().avg_v *
+                                                // ((time_angle.time_queue.front().time_stamp)-scan_time)) ;
+    avg_v = time_angle.time_queue.front().avg_v;
 
-
-
+    time_angle.is_locked = false;
+   // std::cout <<"             sum is::::::::::::"<<sum<<std::endl;
     //w is the angle of lidar
     w =(sum /4 )-90 ;
-    last_endtime = endtime;
-    last_sum = sum;
     float theta=3.1415926 * w / 180;
     std::cout <<"theta:::::::"<<theta<<std::endl;
 
@@ -211,17 +206,6 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
 
     std::cout <<"list"<<pcl::getFieldsList(pointcloud_tmp)<<std::endl;
     //get the really y z of the point
-    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ///
-    ///
-    ///
-    ///
-    ///
-    ///
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
     //   //out
     sensor_msgs::PointCloud2 out;
     //   //define a transfomr (may same as Tm)
@@ -253,10 +237,8 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
         Eigen::Vector4f pt(*(float *)&pointcloud_tmp.data[xyz_offset[0]],*(float*)&pointcloud_tmp.data[xyz_offset[1]],*(float*)&pointcloud_tmp.data[xyz_offset[2]],1);
         Eigen::Vector4f pt_out;
 
-
-
-
-        ntheta = theta-((90-atan(pt[0] / pt[1]))/270*0.025*avg_v);//-;
+        //ntheta = theta-((90-atan(pt[0] / pt[1]))/270*0.025*avg_v);//-;
+        ntheta = theta;
         transform(0,0)=1;
         transform(1,1)=cos(ntheta);
         transform(1,2)=-sin(ntheta);
@@ -269,9 +251,6 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
         
         if(ok<10)
         	foutlaser<<180*theta<<","<< pt[0]<<","<< pt[1] <<","<<180*ntheta<<std::endl;
-        
-	  
-
 
         bool max_range_point = false;
         int distance_ptr_offset = i * pointcloud_tmp.point_step + pointcloud_tmp.fields[dist_idx].offset;
@@ -313,11 +292,6 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     // if()
 
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ///
-    ///
-    ///
 
     // pcl_ros::transformPointCloud(Tm,pointcloud_tmp,pointcloud_tmp);
 
@@ -341,7 +315,7 @@ int main(int argc,char **argv)
     ros::init(argc,argv,"laser_geometry_node");
     ros::NodeHandle n;
     ROS_INFO("Now,start the node succeful!");
-
+    time_angle.is_locked=false;
 
     
     fout.open("/home/lixin/data.csv");
@@ -362,19 +336,71 @@ int main(int argc,char **argv)
     boost::asio::write(sp,boost::asio::buffer("\x0A",1));
     boost::asio::write(sp,boost::asio::buffer("\x01",1));
     boost::asio::write(sp,boost::asio::buffer("\x0B",1));
-
-
-
-
     ROS_INFO("step2111");
 
-
-
     pub=n.advertise<sensor_msgs::PointCloud2>("sync_scan_cloud_filtered",1);
-    sub=n.subscribe("first",1,lCallback);
-    
-    
+    sub=n.subscribe("first",10,lCallback);
+
+boost::thread thrd(&hello);
+   thrd.detach(); thrd.join();
+
+    ros::spinOnce();
+
+
+//    //while read
+//    int a(0),b(0),c(0),sum;
+//    double time(0.0);
+//    sum=0;
+//    char bufread[10];
+//    while(ros::ok())
+//    {
+//        memset(bufread,0,10);
+//        if((sp.is_open()))
+//        {
+//            boost::asio::read(sp,boost::asio::buffer(bufread));
+//            time=ros::Time::now().toSec();
+
+//        }else{
+//            ROS_INFO("sp error");
+//        }
+//        for(int i=0;i<10;i++)
+//        {
+//            bufread[i] = bufread[i] & 0xff;
+//            printf("%x==",bufread[i]);
+
+//        }
+//        for(int i=0;i<10;i++)
+//        {
+//            if((bufread[i] & 0xff)== 0x55)
+//            {
+//                a = 0xff& bufread[i+1];
+//                b = 0xff & bufread[i+2];
+//                c = 0xff & bufread[i+3];
+
+//                if((b>-1) && (c==((a+b) % 255)))
+//                {
+//                    sum = a * 256 + b;
+//                    std::cout << sum << std::endl;
+
+//                    if(sum < 721)
+//                    {
+
+//                        while(time_angle.is_locked)
+//                        {}
+//                        time_angle.is_locked = true;
+//                        sway thesway;
+//                        thesway.time_stamp=time;
+//                        thesway.angle = sum;
+//                        time_angle.time_queue.push(thesway);
+//                        time_angle.is_locked = false;
+//                    }
+//                }
+//            }
+//        }
+//    }
+
     ros::spin();
+
     std::cout <<"....................2....................."<<std::endl;
     fout.close();
     foutlaser.close();

@@ -26,7 +26,7 @@ std::fstream foutlaser;
 double time_before,time_now;
 double sum_before,sum_now;
 
-static double scan_time_old=0;
+
 
 void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
 {
@@ -39,7 +39,7 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     sensor_msgs::PointCloud2 pointcloud_tmp;
 
     double scan_time,scan_diff,point_scan_diff,point_cloud_time;
-    
+    static double scan_time_old=0;
     scan_time= scan_msg->header.stamp.toSec();
     scan_diff=scan_time-scan_time_old;
     scan_time_old=scan_time;
