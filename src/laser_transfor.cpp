@@ -363,12 +363,7 @@ int main(int argc,char **argv)
     boost::asio::write(sp,boost::asio::buffer("\x01",1));
     boost::asio::write(sp,boost::asio::buffer("\x0B",1));
 
-
-
-
     ROS_INFO("step2111");
-
-
 
     pub=n.advertise<sensor_msgs::PointCloud2>("sync_scan_cloud_filtered",1);
     sub=n.subscribe("first",1,lCallback);
@@ -376,6 +371,13 @@ int main(int argc,char **argv)
     
     ros::spin();
     std::cout <<"....................2....................."<<std::endl;
+    std::cout <<"....................2....................."<<std::endl;
+    ////////stopAA550A020C
+    boost::asio::write(sp,boost::asio::buffer("\xAA",1));
+    boost::asio::write(sp,boost::asio::buffer("\x55",1));
+    boost::asio::write(sp,boost::asio::buffer("\x0A",1));
+    boost::asio::write(sp,boost::asio::buffer("\x02",1));
+    boost::asio::write(sp,boost::asio::buffer("\x0c",1));
     fout.close();
     foutlaser.close();
     return 0;
