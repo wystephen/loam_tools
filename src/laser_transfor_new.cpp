@@ -90,9 +90,10 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     time_before = the_time;
     sum_before = sum;
     //w is the angle of lidar
-    sum = sum ;//+ (the_time - point_cloud_time) * avg_v;
+    sum = sum ;//+ (the_time - point_cloud_time) * 0.3;
     w =(sum /4 )-90 ;
     float theta=3.1415926 * w / 180;
+    if(the_time - point_cloud_time > 0.03) return;
     std::cout <<"w:::::::"<<w<<"diff time:"<<the_time - point_cloud_time<<std::endl;
     Tm(0,0)=1;
     Tm(1,1)=cos(theta);
@@ -215,7 +216,7 @@ void handle_read(char *buf,boost::system::error_code ec,
     double sum;
     double time;
     time = ros::Time::now().toSec();
-    sum = ((0xff & (*(buf+2))) * 256)+ ((0xff & (*(buf+3))));
+    sum = ((0xff & (*(buf+2))) * 255)+ ((0xff & (*(buf+3))));
     if(sum > -1 && sum <721)
     {
         time_angle.t_a.angle=sum;
