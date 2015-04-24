@@ -109,7 +109,7 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
                     if(sum<721 )
                     {
                         isok = true;
-                        std::cout << "sumis:::::::::::::::::::::::::::"<<sum<<"(a,b)"<<a<<","<<b<<std::endl;
+                        std::cout << "sumis::::::::::::fu:::::::::::::::"<<sum<<"(a,b)"<<a<<","<<b<<std::endl;
                         sum_now = sum;
                         break;
                     }
