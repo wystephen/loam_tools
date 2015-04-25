@@ -23,9 +23,10 @@ std::fstream fout;
 std::fstream foutlaser;
 
 double time_before,time_now;
-double sum_before,sum_now;
+double yaw_before,sum_now;
 
 static double scan_time_old=0;
+
 
 
 
@@ -50,7 +51,7 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
 
 
     point_scan_diff=point_cloud_time-scan_time;
-    pointcloud_tmp.header.frame_id="/camera";
+    pointcloud_tmp.header.frame_id="/camera_2";
 
     Eigen::Matrix4f Tm= Eigen::Matrix4f::Identity();
     Eigen::Matrix4f Tm1 = Eigen::Matrix4f::Identity();
@@ -61,21 +62,30 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     static tf::TransformListener listener;
     static tf::StampedTransform tf_transform;
     try{
-        listener.lookupTransform("/laser","/camera_t",ros::Time(0),tf_transform);
+        listener.lookupTransform("/laser","/camerat",ros::Time(0),tf_transform);
     }catch(tf::TransformException &ex){
         ros::Duration(1.0).sleep();
         return;
-
     }
     tf::Quaternion q =tf_transform.getRotation();
+
     //double x = tf_transform.getRotation().getX();
+
+
     //double y = tf_transform.getRotation().getY();
     //double z = tf_transform.getRotation().getZ();
     //double w = tf_transform.getRotation().getW();
     double roll,pitch,yaw;
     tf::Matrix3x3(q).getRPY(roll, pitch, yaw);
+
+    double delta_time = ros::Time::now().toSec() - (tf_transform.stamp_.toSec());
+
+    yaw = yaw + delta_time * 1.3 * 1/abs(yaw/3.1415926) *((yaw - yaw_before) / (ros::Time::now().toSec() - time_before));
+
     double theta = -(yaw-3.1415926/2)-3.1415926/2;
 
+    yaw_before = yaw;
+    time_before = ros::Time::now().toSec();
     //ROS_INFO("%f",theta);
     //ROS_INFO("w is:%f",w);
 
@@ -238,7 +248,7 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
 
 int main(int argc,char **argv)
 {
-    ros::init(argc,argv,"laser_geometry_node");
+    ros::init(argc,argv,"laser_transfor_new");
     ros::NodeHandle n;
     ROS_INFO("Now,start the node succeful!");
 
