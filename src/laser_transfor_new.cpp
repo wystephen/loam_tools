@@ -96,8 +96,8 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     Tm(2,2)=cos(theta);
 
 
-    Tm(2,3)=cos(theta) * 0.04;// * 50;//axis-z
-    Tm(1,3)=-sin(theta) * 0.04 ;//* 50;//axis-y
+   // Tm(2,3)=cos(theta) * 0.04;// * 50;//axis-z
+    //Tm(1,3)=-sin(theta) * 0.04 ;//* 50;//axis-y
     Tm(3,3)=1;
 
     //z -90
@@ -167,13 +167,14 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
 
 
         ntheta = theta;//-((90-atan(pt[0] / pt[1]))/270*0.025*avg_v);//-;
+        ntheta = 0;
         transform(0,0)=1;
         transform(1,1)=cos(ntheta);
         transform(1,2)=-sin(ntheta);
         transform(2,1)=sin(ntheta);
         transform(2,2)=cos(ntheta);
-        transform(2,3)=cos(ntheta) * 0.04;
-        transform(1,3)=-sin(theta) * 0.04;
+        transform(2,3)=cos(ntheta);// * 0.033;
+        transform(1,3)=-sin(theta);// * 0.033;
         transform(3,3) = 1;
 
 
@@ -233,9 +234,9 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
 
 
     pcl_ros::transformPointCloud(Tm3,pointcloud_tmp,pointcloud_tmp);
-    pcl_ros::transformPointCloud(Tm3,pointcloud_tmp,pointcloud_tmp);
+    //pcl_ros::transformPointCloud(Tm3,pointcloud_tmp,pointcloud_tmp);
 
-    pcl_ros::transformPointCloud(Tm2,pointcloud_tmp,pointcloud_tmp);
+    //pcl_ros::transformPointCloud(Tm2,pointcloud_tmp,pointcloud_tmp);
     pcl_ros::transformPointCloud(Tm2,pointcloud_tmp,pointcloud_tmp);
 
 

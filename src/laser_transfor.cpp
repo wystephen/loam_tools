@@ -102,7 +102,7 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
                 {
 
                     if(c != (a+b)) return;
-                    sum = a * 256 + b;
+                    sum = a * 255 + b;
                     std::cout << sum << std::endl;
                     ROS_INFO("2--2--");
 
@@ -191,6 +191,8 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     Tm(1,3)=-sin(theta) * 0.04 ;//* 50;//axis-y
     Tm(3,3)=1;
 
+
+
     //z -90
     Tm3(0,1)=1;
     Tm3(1,0)=-1;
@@ -257,20 +259,19 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
 
 
         ntheta = theta-((90-atan(pt[0] / pt[1]))/270*0.025*avg_v);//-;
+        //theta = 0;
         transform(0,0)=1;
         transform(1,1)=cos(ntheta);
         transform(1,2)=-sin(ntheta);
         transform(2,1)=sin(ntheta);
         transform(2,2)=cos(ntheta);
-        transform(2,3)=cos(ntheta) * 0.04;
-        transform(1,3)=-sin(theta) * 0.04;
+        transform(2,3)=cos(ntheta) * 0.035;
+        transform(1,3)=-sin(theta) * 0.035;
         transform(3,3) = 1;
 
         
         if(ok<10)
         	foutlaser<<180*theta<<","<< pt[0]<<","<< pt[1] <<","<<180*ntheta<<std::endl;
-        
-	  
 
 
         bool max_range_point = false;
@@ -297,9 +298,9 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
             pt_out[0] = std::numeric_limits<float> ::quiet_NaN();
         }
 
-        memcpy(&pointcloud_tmp.data[xyz_offset[0]],&pt_out[0], sizeof(float));
-        memcpy(&pointcloud_tmp.data[xyz_offset[1]],&pt_out[1], sizeof(float));
-        memcpy(&pointcloud_tmp.data[xyz_offset[2]],&pt_out[2], sizeof(float));
+        memcpy(&pointcloud_tmp.data[xyz_offset[2]],&pt_out[0], sizeof(float));
+        memcpy(&pointcloud_tmp.data[xyz_offset[0]],&pt_out[1], sizeof(float));
+        memcpy(&pointcloud_tmp.data[xyz_offset[1]],&pt_out[2], sizeof(float));
 
         xyz_offset += pointcloud_tmp.point_step;
 
@@ -308,9 +309,6 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
 
     ok++;
 
-    //check if the viewpoint infomation is persent
-    // int vp_idx = pcl::getFieldIndex(pointcloud_tmp,"vp_x");
-    // if()
 
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -319,20 +317,19 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     ///
     ///
 
-    // pcl_ros::transformPointCloud(Tm,pointcloud_tmp,pointcloud_tmp);
+    //pcl_ros::transformPointCloud(Tm,pointcloud_tmp,pointcloud_tmp);
 
+    sensor_msgs::PointCloud2 r_out_tmp;
+    //pcl_ros::transformPointCloud(Tm3,pointcloud_tmp,pointcloud_tmp);
+    ///pcl_ros::transformPointCloud(Tm3,pointcloud_tmp,r_out_tmp);
 
-    pcl_ros::transformPointCloud(Tm3,pointcloud_tmp,pointcloud_tmp);
-    pcl_ros::transformPointCloud(Tm3,pointcloud_tmp,pointcloud_tmp);
-
-    pcl_ros::transformPointCloud(Tm2,pointcloud_tmp,pointcloud_tmp);
-    pcl_ros::transformPointCloud(Tm2,pointcloud_tmp,pointcloud_tmp);
+    //pcl_ros::transformPointCloud(Tm2,pointcloud_tmp,pointcloud_tmp);
+    //pcl_ros::transformPointCloud(Tm2,r_out_tmp,pointcloud_tmp);
 
 
     //  ROS_INFO("5");
 
     pub.publish(pointcloud_tmp);
-    //fout<<sum<<","<<times<<","<<endtime;
 
 }
 
@@ -366,7 +363,7 @@ int main(int argc,char **argv)
     ROS_INFO("step2111");
 
     pub=n.advertise<sensor_msgs::PointCloud2>("sync_scan_cloud_filtered",1);
-    sub=n.subscribe("first",1,lCallback);
+    sub=n.subscribe("last",1,lCallback);
     
     
     ros::spin();
