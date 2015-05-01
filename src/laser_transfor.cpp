@@ -57,7 +57,7 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     Eigen::Matrix4f Tm2 = Eigen::Matrix4f::Identity();
     Eigen::Matrix4f Tm3 = Eigen::Matrix4f::Identity();
 
-    ROS_INFO("2----");
+    //ROS_INFO("2----");
     // set the w to get angle
     bool isok(false);
     char bufread[10];
@@ -71,22 +71,22 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
         //bool err(false);
         if((sp.is_open()))
         {
-            ROS_INFO("2-is open---");
-           boost::asio::read(sp,boost::asio::buffer(bufread));
+            //ROS_INFO("2-is open---");
+            boost::asio::read(sp,boost::asio::buffer(bufread));
         }else{
-            ROS_INFO("sp error");
+            //ROS_INFO("sp error");
         }
-        ROS_INFO("2-0---");
+        //ROS_INFO("2-0---");
         endtime = ros::Time::now().toSec();
         time_now = endtime;
         for(int i =0 ;i< 10;i++)
         {
             bufread[i] =  bufread[i] & 0xff ;
-            printf("%x--- ",bufread[i]);
+            //printf("%x--- ",bufread[i]);
         }
         //std::cout << std::endl;
 
-        ROS_INFO("2-1---");
+        //ROS_INFO("2-1---");
         for(int i = 0;i < 10;i++)
         {
 
@@ -98,18 +98,18 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
                 c = 0xff & bufread[i+3];
 
                 //std::cout << bufread[i+1]<< "   " << bufread[i+2]<< std::endl;
-                if( (b > -1) && (c == ((a+b) % 255)) )
+                if( (b > -10) && (c == ((a+b) % 255)) )
                 {
 
                     if(c != (a+b)) return;
                     sum = a * 255 + b;
                     std::cout << sum << std::endl;
-                    ROS_INFO("2--2--");
+                    //ROS_INFO("2--2--");
 
-                    if(sum<721 )
+                    if(sum<720 )
                     {
                         isok = true;
-                        std::cout << "sumis::::::::::::fu:::::::::::::::"<<sum<<"(a,b)"<<a<<","<<b<<std::endl;
+                        //std::cout << "sumis::::::::::::fu:::::::::::::::"<<sum<<"(a,b)"<<a<<","<<b<<std::endl;
                         sum_now = sum;
                         break;
                     }
@@ -123,9 +123,9 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
         if(times > 1) return;
 
     }
-    std::cout << "times = " << times <<std::endl;
+    //std::cout << "times = " << times <<std::endl;
 
-    ROS_INFO("3");
+    //ROS_INFO("3");
     endtime = endtime - pointcloud_tmp.header.stamp.toSec();
 
     //recover the sum
@@ -133,9 +133,9 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     fout <<scan_diff<<","<<point_scan_diff <<","<<(sum/4-90) <<","<<times<<","<<endtime<<",";
     int nsum;
     double avg_v;
-    std::cout << "endtime is :;:::"<<endtime <<std::endl;
+    //std::cout << "endtime is :;:::"<<endtime <<std::endl;
     avg_v = (((sum_before - sum_now)/(time_before - time_now)))/720;
-    std::cout <<"avg_v="<<avg_v<<std::endl;
+    //std::cout <<"avg_v="<<avg_v<<std::endl;
     if(sum >= last_sum)
     {
         nsum = sum - (endtime - 0.01) * std::abs((sum_before - sum_now)/(time_before - time_now));//700;//(sum - last_sum)/(endtime - last_endtime);//720;
@@ -166,7 +166,7 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     last_endtime = endtime;
     last_sum = sum;
     float theta=3.1415926 * w / 180;
-    std::cout <<"theta:::::::"<<theta<<std::endl;
+    //std::cout <<"theta:::::::"<<theta<<std::endl;
 
     //    Tm1(0,0)=cos(theta);
     //    Tm1(0,1)=-sin(theta);
@@ -209,9 +209,9 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     Tm1(2,2)=1;
 
 
-    std::cout<< "pointcloud data:"<<pointcloud_tmp.data[20]<<"   size:"<<pointcloud_tmp.data.size()<<std::endl;
+    //std::cout<< "pointcloud data:"<<pointcloud_tmp.data[20]<<"   size:"<<pointcloud_tmp.data.size()<<std::endl;
 
-    std::cout <<"list"<<pcl::getFieldsList(pointcloud_tmp)<<std::endl;
+    //std::cout <<"list"<<pcl::getFieldsList(pointcloud_tmp)<<std::endl;
     //get the really y z of the point
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -271,7 +271,7 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
 
         
         if(ok<10)
-        	foutlaser<<180*theta<<","<< pt[0]<<","<< pt[1] <<","<<180*ntheta<<std::endl;
+            foutlaser<<180*theta<<","<< pt[0]<<","<< pt[1] <<","<<180*ntheta<<std::endl;
 
 
         bool max_range_point = false;
@@ -319,7 +319,7 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
 
     //pcl_ros::transformPointCloud(Tm,pointcloud_tmp,pointcloud_tmp);
 
-    sensor_msgs::PointCloud2 r_out_tmp;
+    //sensor_msgs::PointCloud2 r_out_tmp;
     //pcl_ros::transformPointCloud(Tm3,pointcloud_tmp,pointcloud_tmp);
     ///pcl_ros::transformPointCloud(Tm3,pointcloud_tmp,r_out_tmp);
 
@@ -367,8 +367,8 @@ int main(int argc,char **argv)
     
     
     ros::spin();
-    std::cout <<"....................2....................."<<std::endl;
-    std::cout <<"....................2....................."<<std::endl;
+    //std::cout <<"....................2....................."<<std::endl;
+    //std::cout <<"....................2....................."<<std::endl;
     ////////stopAA550A020C
     boost::asio::write(sp,boost::asio::buffer("\xAA",1));
     boost::asio::write(sp,boost::asio::buffer("\x55",1));
