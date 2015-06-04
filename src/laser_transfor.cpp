@@ -28,6 +28,27 @@ double sum_before,sum_now;
 
 static double scan_time_old=0;
 
+void handle_read(char * buf,boost::system::error_code ec, std::size_t bytes_transferred){
+    if(bytes_transferred > 4){
+        double sum;
+       // static tf::TransformBroadcaster br;
+        //tf::Transform transform;
+        sum = ((0xff &(*(buf+2))) * 255)+((0xff & (*(buf+3))));
+
+        if(sum > -1 && sum <721){
+            ROS_INFO("sum is:");
+            std::cout << sum << std::endl;
+
+//            transform.setOrigin(tf::Vector3(0.0,0.0,0.0));
+//            tf::Quaternion q;
+//            q.setRPY(0,0,(3.1415926 * ((sum / 4) - 90)/180));
+//            transform.setRotation(q);
+//            br.sendTransform(tf::StampedTransform(transform,ros::Time::now(),"/camerat","/laser"));
+        }
+    }
+}
+
+
 void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
 {
 
@@ -58,6 +79,7 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     Eigen::Matrix4f Tm3 = Eigen::Matrix4f::Identity();
 
     //ROS_INFO("2----");
+
     // set the w to get angle
     bool isok(false);
     char bufread[10];
@@ -71,10 +93,10 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
         //bool err(false);
         if((sp.is_open()))
         {
-            //ROS_INFO("2-is open---");
+            ROS_INFO("2-is open---");
             boost::asio::read(sp,boost::asio::buffer(bufread));
         }else{
-            //ROS_INFO("sp error");
+            ROS_INFO("sp error");
         }
         //ROS_INFO("2-0---");
         endtime = ros::Time::now().toSec();
@@ -98,10 +120,10 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
                 c = 0xff & bufread[i+3];
 
                 //std::cout << bufread[i+1]<< "   " << bufread[i+2]<< std::endl;
-                if( (b > -10) && (c == ((a+b) % 255)) )
+                if( (b > -1) && (c == ((a+b) % 255)) )
                 {
 
-                    if(c != (a+b)) return;
+                    //if(c != (a+b)) return;
                     sum = a * 255 + b;
                     std::cout << sum << std::endl;
                     //ROS_INFO("2--2--");
@@ -327,7 +349,7 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     //pcl_ros::transformPointCloud(Tm2,r_out_tmp,pointcloud_tmp);
 
 
-    //  ROS_INFO("5");
+    ROS_INFO("5");
 
     pub.publish(pointcloud_tmp);
 
@@ -364,9 +386,31 @@ int main(int argc,char **argv)
 
     pub=n.advertise<sensor_msgs::PointCloud2>("sync_scan_cloud_filtered",1);
     sub=n.subscribe("last",1,lCallback);
+
     
-    
-    ros::spin();
+
+
+
+    while(ros::ok()){
+        ros::spinOnce();
+        char buf[5];
+        boost::asio::io_service iosev;
+        boost::asio::serial_port sp_tmp(iosev,"/dev/ttyUSB0");
+        memset(buf,0,5);
+        boost::asio::async_read(sp_tmp,boost::asio::buffer(buf),boost::bind(handle_read,buf,_1,_2));
+        boost::asio::deadline_timer timer(iosev);
+
+        timer.expires_from_now(boost::posix_time::millisec(8));
+        timer.async_wait(boost::bind(&boost::asio::serial_port::cancel,boost::ref(sp_tmp)));
+
+
+        iosev.run();
+        sp_tmp.close();
+        for (int kk = 1;kk<100000;kk++);
+
+
+
+    }
     //std::cout <<"....................2....................."<<std::endl;
     //std::cout <<"....................2....................."<<std::endl;
     ////////stopAA550A020C

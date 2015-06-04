@@ -40,14 +40,18 @@ int main(int argc, char **argv){
         boost::asio::async_read(sp_tmp,boost::asio::buffer(buf),boost::bind(handle_read,buf,_1,_2));
         boost::asio::deadline_timer timer(iosev);
 
-        timer.expires_from_now(boost::posix_time::millisec(1));
+        timer.expires_from_now(boost::posix_time::millisec(8));
         timer.async_wait(boost::bind(&boost::asio::serial_port::cancel,boost::ref(sp_tmp)));
+
 
         iosev.run();
         sp_tmp.close();
+        for (int kk = 1;kk<100000;kk++);
+
 
 
     }
+
 
     ////////stopAA550A020C
     boost::asio::write(sp,boost::asio::buffer("\xAA",1));
@@ -70,9 +74,11 @@ void handle_read(char * buf,boost::system::error_code ec, std::size_t bytes_tran
        // static tf::TransformBroadcaster br;
         //tf::Transform transform;
         sum = ((0xff &(*(buf+2))) * 255)+((0xff & (*(buf+3))));
+
         if(sum > -1 && sum <721){
-            //ROS_INFO("sum is:");
+            ROS_INFO("sum is:");
             std::cout << sum << std::endl;
+
 //            transform.setOrigin(tf::Vector3(0.0,0.0,0.0));
 //            tf::Quaternion q;
 //            q.setRPY(0,0,(3.1415926 * ((sum / 4) - 90)/180));
