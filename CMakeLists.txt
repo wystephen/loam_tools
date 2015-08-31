@@ -118,7 +118,7 @@ include_directories(
 
  add_executable(sum_pointcloud src/sum_pointcloud.cpp)
  add_executable(laser_transfor_new src/laser_transfor_new.cpp)
-## Add cmake target dependencies of the executable/library
+ add_executable(fast_transfor src/fast_transfor.cpp)
 ## as an example, message headers may need to be generated before nodes
 # add_dependencies(laser_tools_node laser_tools_generate_messages_cpp)
 
@@ -129,6 +129,7 @@ include_directories(
 target_link_libraries(laser_transfor ${catkin_LIBRARIES})
 target_link_libraries(laser_transfor_new ${catkin_LIBRARIES})
 target_link_libraries(sum_pointcloud ${catkin_LIBRARIES})
+target_link_libraries(fast_transfor ${catkin_LIBRARIES})
 #############
 ## Install ##
 #############

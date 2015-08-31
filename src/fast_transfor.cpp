@@ -8,6 +8,8 @@
 #include<pcl_ros/point_cloud.h>
 #include <fstream>
 
+#include <sys/shm.h>
+#include <sys/sem.h>
 
 ros::Subscriber sub;
 ros::Publisher pub;
@@ -36,8 +38,14 @@ void handle_read(char * buf,boost::system::error_code ec, std::size_t bytes_tran
         sum = ((0xff &(*(buf+2))) * 255)+((0xff & (*(buf+3))));
 
         if(sum > -1 && sum <721){
-            ROS_INFO("sum is:");
-            std::cout << sum << std::endl;
+            //ROS_INFO("sum is:");
+            //std::cout << sum << std::endl;
+            int shmid;
+            shmid = shmget(111,4,0666);
+            int * shm, *s;
+            shm = (int*)shmat(shmid,NULL,0);
+            s = shm;
+            *s = sum;
 
 //            transform.setOrigin(tf::Vector3(0.0,0.0,0.0));
 //            tf::Quaternion q;
@@ -60,12 +68,12 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     sensor_msgs::PointCloud2 pointcloud_tmp;
 
     double scan_time,scan_diff,point_scan_diff,point_cloud_time;
-    
+
     scan_time= scan_msg->header.stamp.toSec();
     scan_diff=scan_time-scan_time_old;
     scan_time_old=scan_time;
     p.projectLaser(*scan_msg,pointcloud_tmp,-1.0,3);//1.0 - 2.0  or -1.0
-    
+
     point_cloud_time = pointcloud_tmp.header.stamp.toSec();
 
     //std::cout << "scantime is :;:::"<<scan_time <<std::endl;
@@ -87,65 +95,43 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     sum = 0;
     int times(0);
     double endtime;
-    int first_data=0;
     while(isok==false)//ver 1.0--read
     {
         memset(bufread,0,10);
         //bool err(false);
-        if((sp.is_open()))
-        {
-            ROS_INFO("2-is open---");
-            boost::asio::read(sp,boost::asio::buffer(bufread));
-        }else{
-            ROS_INFO("sp error");
-        }
+        //if((sp.is_open()))
+        //{
+         //   ROS_INFO("2-is open---");
+        //    boost::asio::read(sp,boost::asio::buffer(bufread));
+        //}else{
+        //    ROS_INFO("sp error");
+       // }
+
+        int shmid;
+        int * shm,*s;
+        shmid = shmget(111,4,0666);
+        shm = (int*)shmat(shmid,NULL,0);
+
+        s = shm;
+        sum = *s;
+
         //ROS_INFO("2-0---");
         endtime = ros::Time::now().toSec();
         time_now = endtime;
-        for(int i =0 ;i< 10;i++)
-        {
-            bufread[i] =  bufread[i] & 0xff ;
-            //printf("%x--- ",bufread[i]);
+        if (sum < 720){
+            isok = true;
+            sum_now = sum ;
+            break;
+        }else{
+            std::cout << "error sum:"<< sum<< std::endl;
         }
-        //std::cout << std::endl;
 
-        //ROS_INFO("2-1---");
-        for(int i = 0;i < 10;i++)
-        {
 
-            if((bufread[i] & 0xff) == 0x55)
-            {
-                if(i<5){
-                    first_data = 1;
-                }else if(i<9){
-                    first_data = 2;
-                }
 
-                a = 0xff & bufread[i+1];
-                b = 0xff & bufread[i+2];
-                c = 0xff & bufread[i+3];
 
-                //std::cout << bufread[i+1]<< "   " << bufread[i+2]<< std::endl;
-                if( (b > -1) && (c == ((a+b) % 255)) )
-                {
 
-                    //if(c != (a+b)) return;
-                    sum = a * 255 + b;
-                    std::cout << sum << std::endl;
-                    //ROS_INFO("2--2--");
 
-                    if(sum<720 )
-                    {
-                        isok = true;
-                        //std::cout << "sumis::::::::::::fu:::::::::::::::"<<sum<<"(a,b)"<<a<<","<<b<<std::endl;
-                        sum_now = sum;
-                        break;
-                    }
 
-                }
-            }
-
-        }
         //if(!isok) return;
         times++;
         if(times > 1) return;
@@ -161,23 +147,19 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     fout <<scan_diff<<","<<point_scan_diff <<","<<(sum/4-90) <<","<<times<<","<<endtime<<",";
     int nsum;
     double avg_v;
-    double t_avg_v;
     //std::cout << "endtime is :;:::"<<endtime <<std::endl;
     avg_v = (((sum_before - sum_now)/(time_before - time_now)))/720;
-   // avg_v = (avg_v + t_avg_v ) /2;
     //std::cout <<"avg_v="<<avg_v<<std::endl;
-    //if (abs(sum_before - sum_now) > 15)
-      //  return;
     if(sum >= last_sum)
     {
-        nsum = sum - (endtime - 0.01*first_data) * std::abs((sum_before - sum_now)/(time_before - time_now));//700;//(sum - last_sum)/(endtime - last_endtime);//720;
+        nsum = sum - (endtime - 0.01) * std::abs((sum_before - sum_now)/(time_before - time_now));//700;//(sum - last_sum)/(endtime - last_endtime);//720;
         if(nsum < 0)
         {
 
             nsum = -1 * nsum ;
         }
     }else{
-        nsum = sum + (endtime - 0.01*first_data) * std::abs((sum_before - sum_now)/(time_before - time_now));//700;//(su690m - last_sum)/(endtime - last_endtime);//720;
+        nsum = sum + (endtime - 0.01) * std::abs((sum_before - sum_now)/(time_before - time_now));//700;//(su690m - last_sum)/(endtime - last_endtime);//720;
         if(nsum > 720)
         {
 
@@ -198,7 +180,53 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     last_endtime = endtime;
     last_sum = sum;
     float theta=3.1415926 * w / 180;
+    //std::cout <<"theta:::::::"<<theta<<std::endl;
 
+    //    Tm1(0,0)=cos(theta);
+    //    Tm1(0,1)=-sin(theta);
+    //    Tm1(1,0)=sin(theta);
+    //    Tm1(1,1)=cos(theta);
+    //    Tm1(2,3)=2.5;
+    //    Tm1(1,3)=2.5;
+    //    Tm1(3,3)=1;
+
+
+    //ROS_INFO("%f",theta);
+    //ROS_INFO("w is:%f",w);
+
+    Tm(0,0)=1;
+    Tm(1,1)=cos(theta);
+    Tm(1,2)=-sin(theta);
+    Tm(2,1)=sin(theta);
+    Tm(2,2)=cos(theta);
+
+
+    Tm(2,3)=cos(theta) * 0.04;// * 50;//axis-z
+    Tm(1,3)=-sin(theta) * 0.04 ;//* 50;//axis-y
+    Tm(3,3)=1;
+
+
+
+    //z -90
+    Tm3(0,1)=1;
+    Tm3(1,0)=-1;
+    Tm3(2,2)=1;
+
+    //x -90
+    Tm2(0,0)=1;
+    Tm2(1,2)=1;
+    Tm2(2,1)=-1;
+    // ROS_INFO("4");
+    //z +180
+    Tm1(0,0)=-1;
+    Tm1(1,1)=-1;
+    Tm1(2,2)=1;
+
+
+    //std::cout<< "pointcloud data:"<<pointcloud_tmp.data[20]<<"   size:"<<pointcloud_tmp.data.size()<<std::endl;
+
+    //std::cout <<"list"<<pcl::getFieldsList(pointcloud_tmp)<<std::endl;
+    //get the really y z of the point
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -210,9 +238,20 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     ///
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    //   //out
+    sensor_msgs::PointCloud2 out;
+    //   //define a transfomr (may same as Tm)
     Eigen::Matrix4f transform = Eigen::Matrix4f::Identity();
     transform = Tm;
-
+    //   transform(0,0)=1;
+    //   transform(1,1)=cos(theta);
+    //   transform(1,2)=-sin(theta);
+    //   transform(2,1)=sin(theta);
+    //   transform(2,2)=cos(theta);
+    //   transform(2,3)=cos(theta) * 0.035;
+    //   transform(1,3)=-sin(theta) * 0.035;
+    //   transform(3,3) = 1;
+    // Get X-Y-Z indices;
     int x_idx = pcl::getFieldIndex(pointcloud_tmp,"x");
     int y_idx = pcl::getFieldIndex(pointcloud_tmp,"y");
     int z_idx = pcl::getFieldIndex(pointcloud_tmp,"z");
@@ -233,19 +272,18 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
 
 
 
-        //ntheta = theta-((90-atan(pt[0] / pt[1]))/270*0.025*avg_v);//-;
-        ntheta = theta;
+        ntheta = theta-((90-atan(pt[0] / pt[1]))/270*0.025*avg_v);//-;
         //theta = 0;
         transform(0,0)=1;
         transform(1,1)=cos(ntheta);
         transform(1,2)=-sin(ntheta);
         transform(2,1)=sin(ntheta);
         transform(2,2)=cos(ntheta);
-        transform(2,3)=cos(ntheta) * 0.03;
-        transform(1,3)=-sin(ntheta) * 0.03;
+        transform(2,3)=cos(ntheta) * 0.035;
+        transform(1,3)=-sin(ntheta) * 0.035;
         transform(3,3) = 1;
 
-        
+
 
 
 
@@ -302,7 +340,7 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     //pcl_ros::transformPointCloud(Tm2,r_out_tmp,pointcloud_tmp);
 
 
-    ROS_INFO("95");
+    ROS_INFO("5");
 
     pub.publish(pointcloud_tmp);
 
@@ -310,16 +348,26 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
 
 int main(int argc,char **argv)
 {
-    ros::init(argc,argv,"laser_geometry_node");
+    ros::init(argc,argv,"fast_transfor");
     ros::NodeHandle n;
     ROS_INFO("Now,start the node succeful!");
 
 
-    
+
     fout.open("/home/lixin/data.csv");
     foutlaser.open("/home/lixin/datalaser.csv");
     std::cout <<"....................1....................."<<std::endl;
-    
+
+    //create a shm
+    int *shm,*s;
+    int shmid;
+
+    if((shmid = shmget(111,4,IPC_CREAT|0666))<0)
+        std::cout <<"shmget error!";
+    if((shm = (int*)shmat(shmid,NULL,0)) == (int*) -1)
+        std::cout <<"shmat error!";
+
+
 
 
     sp.set_option(boost::asio::serial_port::baud_rate(115200));
@@ -338,9 +386,9 @@ int main(int argc,char **argv)
     ROS_INFO("step2111");
 
     pub=n.advertise<sensor_msgs::PointCloud2>("sync_scan_cloud_filtered",1);
-    sub=n.subscribe("last",1,lCallback);
+    sub=n.subscribe("first",1,lCallback);
 
-    
+
 
 
 
