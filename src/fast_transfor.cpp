@@ -27,7 +27,7 @@ double time_before,time_now;
 double sum_before,sum_now;
 
 static double scan_time_old=0;
-double last_avg_v(5400);
+double last_avg_v(7200);
 
 //vector<double> time_stamp;
 //vector<double> sum_vector;
@@ -137,22 +137,8 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
 
     if(sum_now < sum_before)
         sum_now += 7200;
-    avg_v = (((sum_before - sum_now)/(time_before - time_now)));
-    //std::cout << "avg_v:"<<avg_v<<std::endl;
+    avg_v = last_avg_v;//(((sum_before - sum_now)/(time_before - time_now)));
 
-
-
-    if((avg_v<0.8*last_avg_v)||(avg_v>1.2*last_avg_v))
-    {
-
-        avg_v = last_avg_v;
-
-    }
-
-    //double t_v = last_avg_v;
-    //last_avg_v = avg_v;
-
-    //avg_v = 0.05*avg_v + 0.95*t_v;
 
     sum = sum-endtime * avg_v ;
     if(sum < 0)
@@ -201,7 +187,7 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
         Eigen::Vector4f pt_out;
 
 
-        ntheta = theta+(0.025/8*avg_v*3.1415926/180/20)+(((135+(double)(atan2(pt[1], pt[0])*180/3.14159265))/270)*avg_v*0.025/20*3/4*3.1415926/180);
+        ntheta = theta+(0.025/8*avg_v*3.1415926/180/20)+(((135+(double)(atan2(pt[1], pt[0])*180/3.14159265))/270)*avg_v*0.025/20*3/4*3.1415926/180)*8/10;
 
         //std::cout<<((135+(double)(atan2(pt[1], pt[0])*180/3.14159265))/270*avg_v*0.025/20*3/4)<<std::endl;//<<"     " <<((135+(atan2(pt[1], pt[1])*180/3.14159265))/270*0.025*avg_v/20*3/4)/270*0.025<<std::endl;
                 //ntheta = theta - avg_v*(0.025/8+(pointcloud_tmp.width-i)/pointcloud_tmp.width*0.025*3/4);
@@ -210,14 +196,15 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
         //if(ntheta<0) ntheta+=6.2831852;
 
         //ntheta = theta;
-        //theta = 0;
+
+
         transform(0,0)=1;
         transform(1,1)=cos(ntheta);
         transform(1,2)=-sin(ntheta);
         transform(2,1)=sin(ntheta);
         transform(2,2)=cos(ntheta);
-        transform(2,3)=cos(ntheta)* -0.01 ;//* -0.001;
-        transform(1,3)=-sin(ntheta)*  -0.01 ;//* -0.001;
+        transform(2,3)=cos(ntheta)* -0.00 ;//* -0.001;
+        transform(1,3)=-sin(ntheta)*  -0.00 ;//* -0.001;
         transform(3,3) = 1;
 
 
