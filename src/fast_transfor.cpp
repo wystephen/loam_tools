@@ -8,6 +8,9 @@
 #include<pcl_ros/point_cloud.h>
 #include <fstream>
 
+#include <string>
+#include <sstream>
+
 #include <vector>
 ros::Subscriber sub;
 ros::Publisher pub;
@@ -100,7 +103,7 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
                 if( (b > -1) && (c == ((a+b) % 256)) )
                 {
 
-                    sum = a * 255 + b;
+                    sum = a * 256 + b;
 
                     if(sum<7201 )
                     {
@@ -110,7 +113,7 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
                             serial_time-=0.01;
                         isok = true;
                         sum_now = sum;
-                        //std::cout <<i<<std::endl;
+                        std::cout <<i<<std::endl;
                         break;
                     }
 
@@ -129,7 +132,7 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     time_now = serial_time;
 
     double endtime = serial_time - scan_time;pointcloud_tmp.header.stamp.toSec();
-    //std::cout << endtime <<std::endl;
+    std::cout << endtime <<std::endl;
 
 
     double avg_v;
@@ -138,8 +141,7 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     if(sum_now < sum_before)
         sum_now += 7200;
     avg_v = last_avg_v;//(((sum_before - sum_now)/(time_before - time_now)));
-
-
+    std::cout << (sum_before-sum_now)/(time_before-time_now)<<std::endl;
     sum = sum-endtime * avg_v ;
     if(sum < 0)
         sum +=7200;
@@ -153,7 +155,7 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     last_endtime = endtime;
     last_sum = sum;
     float theta=3.1415926 * w / 180;
-    //std::cout <<"last_avg_v:"<<last_avg_v<<"avg_v:"<<avg_v<<"endtime*avg_v:"<<endtime*avg_v<<"sum:"<<sum<<"w:"<<w<<std::endl;
+    std::cout <<"last_avg_v:"<<last_avg_v<<"avg_v:"<<avg_v<<"endtime*avg_v:"<<endtime*avg_v<<"sum:"<<sum<<"w:"<<w<<std::endl;
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////atan2////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -180,6 +182,13 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     double ntheta;
     int static ok=0;
     //std::cout <<"-------------------------------"<<std::endl;
+    //std::ofstream fout;
+    //std::ostringstream oss;
+    //oss << "/home/lixin/save/"<<pointcloud_tmp.header.stamp<<".txt";
+    //fout.open(oss.str().c_str());
+    //fout <<avg_v<<std::endl;
+    //fout <<sum<<std::endl;
+    //fout << theta<<std::endl;
     for (size_t i = 0;i<pointcloud_tmp.width * pointcloud_tmp.height;++i)
     {
 
@@ -187,8 +196,8 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
         Eigen::Vector4f pt_out;
 
 
-        ntheta = theta+(0.025/8*avg_v*3.1415926/180/20)+(((135+(double)(atan2(pt[1], pt[0])*180/3.14159265))/270)*avg_v*0.025/20*3/4*3.1415926/180)*8/10;
-
+        ntheta = theta+(0.025/8*avg_v*3.1415926/180/20)*8/10+(((135+(double)(atan2(pt[1], pt[0])*180/3.14159265))/270)*avg_v*0.025/20*3/4*3.1415926/180)*8/10;
+        //fout << ntheta<<","<<pt[0]<<","<<pt[1]<<","<<pt[2]<<std::endl;
         //std::cout<<((135+(double)(atan2(pt[1], pt[0])*180/3.14159265))/270*avg_v*0.025/20*3/4)<<std::endl;//<<"     " <<((135+(atan2(pt[1], pt[1])*180/3.14159265))/270*0.025*avg_v/20*3/4)/270*0.025<<std::endl;
                 //ntheta = theta - avg_v*(0.025/8+(pointcloud_tmp.width-i)/pointcloud_tmp.width*0.025*3/4);
         //std::cout << atan2(pt[1], pt[0])*180/3.14159265<<std::endl;
@@ -203,8 +212,8 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
         transform(1,2)=-sin(ntheta);
         transform(2,1)=sin(ntheta);
         transform(2,2)=cos(ntheta);
-        transform(2,3)=cos(ntheta)* -0.00 ;//* -0.001;
-        transform(1,3)=-sin(ntheta)*  -0.00 ;//* -0.001;
+        transform(2,3)=cos(ntheta)* -0.01 ;//* -0.001;
+        transform(1,3)=-sin(ntheta)*  -0.01 ;//* -0.001;
         transform(3,3) = 1;
 
 
@@ -245,6 +254,7 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     }
 
     ok++;
+    //fout.close();
 
 
     pub.publish(pointcloud_tmp);
