@@ -108,12 +108,12 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
                     if(sum<7201 )
                     {
                         //if(i<1)
-                            //serial_time-=0.01;
+                        //serial_time-=0.01;
                         if( i<6)
                             serial_time-=0.01;
                         isok = true;
                         sum_now = sum;
-                        std::cout <<i<<std::endl;
+                        //std::cout <<i<<std::endl;
                         break;
                     }
 
@@ -132,7 +132,7 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     time_now = serial_time;
 
     double endtime = serial_time - scan_time;pointcloud_tmp.header.stamp.toSec();
-    std::cout << endtime <<std::endl;
+    //std::cout << endtime <<std::endl;
 
 
     double avg_v;
@@ -141,7 +141,7 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     if(sum_now < sum_before)
         sum_now += 7200;
     avg_v = last_avg_v;//(((sum_before - sum_now)/(time_before - time_now)));
-    std::cout << (sum_before-sum_now)/(time_before-time_now)<<std::endl;
+    //std::cout << (sum_before-sum_now)/(time_before-time_now)<<std::endl;
     sum = sum-endtime * avg_v ;
     if(sum < 0)
         sum +=7200;
@@ -155,7 +155,7 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     last_endtime = endtime;
     last_sum = sum;
     float theta=3.1415926 * w / 180;
-    std::cout <<"last_avg_v:"<<last_avg_v<<"avg_v:"<<avg_v<<"endtime*avg_v:"<<endtime*avg_v<<"sum:"<<sum<<"w:"<<w<<std::endl;
+    //std::cout <<"last_avg_v:"<<last_avg_v<<"avg_v:"<<avg_v<<"endtime*avg_v:"<<endtime*avg_v<<"sum:"<<sum<<"w:"<<w<<std::endl;
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////atan2////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -169,6 +169,17 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
 
     Eigen::Matrix4f transform = Eigen::Matrix4f::Identity();
     transform = Tm;
+    Eigen::Matrix4f t_transform = Eigen::Matrix4f::Identity();
+    double err_theta_z(0);
+    err_theta_z=0.6* 0.0174  ;//0.0174 1du
+    double offset_r = 0.04;
+    t_transform(0,0) = cos(err_theta_z);
+    t_transform(1,0)  = -sin(err_theta_z);
+    t_transform(0,1) = sin(err_theta_z);
+    t_transform(1,1) = cos(err_theta_z);
+    t_transform(2,2) = 1;
+    t_transform(3,3) = 1;
+
 
     int x_idx = pcl::getFieldIndex(pointcloud_tmp,"x");
     int y_idx = pcl::getFieldIndex(pointcloud_tmp,"y");
@@ -181,14 +192,10 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     Eigen::Array4i xyz_offset (pointcloud_tmp.fields[x_idx].offset,pointcloud_tmp.fields[y_idx].offset,pointcloud_tmp.fields[z_idx].offset,0);
     double ntheta;
     int static ok=0;
-    //std::cout <<"-------------------------------"<<std::endl;
-    //std::ofstream fout;
-    //std::ostringstream oss;
-    //oss << "/home/lixin/save/"<<pointcloud_tmp.header.stamp<<".txt";
-    //fout.open(oss.str().c_str());
-    //fout <<avg_v<<std::endl;
-    //fout <<sum<<std::endl;
-    //fout << theta<<std::endl;
+
+
+    transform(0,0)=1;
+    transform(3,3) = 1;
     for (size_t i = 0;i<pointcloud_tmp.width * pointcloud_tmp.height;++i)
     {
 
@@ -196,25 +203,20 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
         Eigen::Vector4f pt_out;
 
 
-        ntheta = theta+(0.025/8*avg_v*3.1415926/180/20)*8/10+(((135+(double)(atan2(pt[1], pt[0])*180/3.14159265))/270)*avg_v*0.025/20*3/4*3.1415926/180)*8/10;
-        //fout << ntheta<<","<<pt[0]<<","<<pt[1]<<","<<pt[2]<<std::endl;
-        //std::cout<<((135+(double)(atan2(pt[1], pt[0])*180/3.14159265))/270*avg_v*0.025/20*3/4)<<std::endl;//<<"     " <<((135+(atan2(pt[1], pt[1])*180/3.14159265))/270*0.025*avg_v/20*3/4)/270*0.025<<std::endl;
-                //ntheta = theta - avg_v*(0.025/8+(pointcloud_tmp.width-i)/pointcloud_tmp.width*0.025*3/4);
-        //std::cout << atan2(pt[1], pt[0])*180/3.14159265<<std::endl;
-        //std::cout<< theta<<"   "<<ntheta<<std::endl;
-        //if(ntheta<0) ntheta+=6.2831852;
-
-        //ntheta = theta;
+        ntheta = theta+(0.025/8*avg_v*3.1415926/180/20)+(((135+(double)(atan2(pt[1], pt[0])*180/3.14159265))/270)*avg_v*0.025/20*3/4*3.1415926/180);
 
 
-        transform(0,0)=1;
+
+
+
         transform(1,1)=cos(ntheta);
         transform(1,2)=-sin(ntheta);
         transform(2,1)=sin(ntheta);
         transform(2,2)=cos(ntheta);
-        transform(2,3)=cos(ntheta)* -0.01 ;//* -0.001;
-        transform(1,3)=-sin(ntheta)*  -0.01 ;//* -0.001;
-        transform(3,3) = 1;
+        transform(2,3)=cos(ntheta)* offset_r ;
+        transform(1,3)=-sin(ntheta)*  offset_r ;
+
+
 
 
 
@@ -230,20 +232,25 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
                 pt_out = pt;
             }else{//max range point
                 pt[0] = *distance_ptr; //Replace x with the x value saved in distance
-                pt_out = transform * pt;//
+                pt_out = t_transform * pt;
+                pt_out = transform * pt_out;//
                 max_range_point = true;
             }
         }else{
-            pt_out = transform * pt;
+            pt_out = t_transform * pt;
+            pt_out = transform * pt_out;
         }
 
         if(max_range_point)
         {
-            //Save x. value in distance again
             *(float*)(&pointcloud_tmp.data[distance_ptr_offset]) = pt_out[0];
             pt_out[0] = std::numeric_limits<float> ::quiet_NaN();
         }
+
         pt_out[2] = - pt_out[2];
+
+
+
         memcpy(&pointcloud_tmp.data[xyz_offset[2]],&pt_out[0], sizeof(float));
         memcpy(&(pointcloud_tmp.data[xyz_offset[0]]),&pt_out[1], sizeof(float));
         memcpy(&pointcloud_tmp.data[xyz_offset[1]],&pt_out[2], sizeof(float));
@@ -253,8 +260,9 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
 
     }
 
+
     ok++;
-    //fout.close();
+
 
 
     pub.publish(pointcloud_tmp);
@@ -307,15 +315,16 @@ int main(int argc,char **argv)
         memset(buf,0,5);
         boost::asio::async_read(sp_tmp,boost::asio::buffer(buf),boost::bind(handle_read,buf,_1,_2));
         boost::asio::deadline_timer timer(iosev);
-
+        ros::spinOnce();
         timer.expires_from_now(boost::posix_time::microseconds(100));
         timer.async_wait(boost::bind(&boost::asio::serial_port::cancel,boost::ref(sp_tmp)));
-
+        ros::spinOnce();
 
         iosev.run();
         sp_tmp.close();
-        for (int kk = 1;kk<1000;kk++);
-
+        for (int kk = 1;kk<1000;kk++)
+        {ros::spinOnce();}
+        ros::spinOnce();
 
 
 
@@ -348,6 +357,11 @@ int main(int argc,char **argv)
     boost::asio::write(sp,boost::asio::buffer("\xFc",1));
     fout.close();
     foutlaser.close();
+    boost::asio::write(sp,boost::asio::buffer("\xAA",1));
+    boost::asio::write(sp,boost::asio::buffer("\x55",1));
+    boost::asio::write(sp,boost::asio::buffer("\xFA",1));
+    boost::asio::write(sp,boost::asio::buffer("\x02",1));
+    boost::asio::write(sp,boost::asio::buffer("\xFc",1));
     sp.close();
     return 0;
 }

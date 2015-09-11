@@ -1,8 +1,5 @@
 #include "laser_geometry/laser_geometry.h"
 #include "tf/tf.h"
-//#include <boost/asio.hpp>
-//#include <boost/bind.hpp>
-//#include <boost/timer.hpp>
 
 #include <pcl_ros/transforms.h>
 #include<pcl_ros/point_cloud.h>
@@ -16,7 +13,6 @@
 #include<termio.h>
 #include<stdlib.h>
 
-//#include<pthread.h>
 
 int fd;
 
@@ -33,7 +29,7 @@ double time_before,time_now;
 double sum_before,sum_now;
 
 static double scan_time_old=0;
-double last_avg_v(7200);
+double last_avg_v(600);
 
 
 //for debug
@@ -65,6 +61,7 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     Eigen::Matrix4f Tm2 = Eigen::Matrix4f::Identity();
     Eigen::Matrix4f Tm3 = Eigen::Matrix4f::Identity();
 
+
     bool isok(false);
     char bufread[1000];
     int a(0),b(0),c(0),sum;
@@ -76,9 +73,7 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     {
         int data_long(0);
         while((data_long = read(fd,bufread,1000))<5)
-        {
 
-        }
 
 
 
@@ -112,20 +107,6 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
                             bb = 0xff & bufread[i-3];
                             cc = 0xff & bufread[i-2];
                             if( (bb>-1)&&(c==((a+b)%256)) ){
-                                //if(sum < (aa*256+bb))
-                                //{
-                                    //std::cout << "v:"<<(double)(7200+sum-(aa*256+bb))/0.01<<std::endl;
-                                    //last_avg_v = (double)(7200+sum-(aa*256+bb))/0.01;
-
-
-                                //}else{
-                                //std::cout << "v:"<<(double)(sum-(aa*256+bb))/0.01<<std::endl;
-                                //last_avg_v = (double)(sum-(aa*256+bb))/0.01;
-                                //}
-                                //if(abs(last_avg_v-7200)>400)
-                                    //return;
-                                //last_avg_v = 7200;
-
 
                             }
                         }
@@ -161,7 +142,7 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     sum = sum-endtime * avg_v ;
     if(sum < 0)
         sum +=7200;
-    if(sum>7200) sum-=7200;
+    if(sum>7200) sum -= 7200;
     time_before = time_now;
     sum_before = sum;
 
@@ -228,8 +209,8 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
         transform(1,2)=-sin(ntheta);
         transform(2,1)=sin(ntheta);
         transform(2,2)=cos(ntheta);
-        transform(2,3)=cos(ntheta)* -0.01 ;//* -0.001;
-        transform(1,3)=-sin(ntheta)*  -0.01 ;//* -0.001;
+        transform(2,3)=cos(ntheta) * (-0.02) ;//* -0.001;
+        transform(1,3)=-sin(ntheta) *  (-0.02) ;//* -0.001;
         transform(3,3) = 1;
 
 
@@ -295,7 +276,7 @@ int main(int argc,char **argv)
 
     newtio.c_cflag |= CS8;
 
-    newtio.c_cflag &=~PARENB;
+    newtio.c_cflag &= ~PARENB;
 
     cfsetispeed(&newtio,B115200);
     cfsetospeed(&newtio,B115200);
@@ -320,8 +301,6 @@ int main(int argc,char **argv)
     pthread_t tid;
     int rv,t;
     t=1;
-    //rv = pthread_create(&tid,NULL,(void*(*)(void*))show_time,(void *)t);
-
 
 
 

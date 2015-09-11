@@ -13,9 +13,32 @@
 
 std::fstream fout;
 ros::Subscriber sub;
-void readCallback(const sensor_msgs::PointCloud2::ConstPtr& point_msg){
 
-    sensor_msgs::PointCloud2 pointcloud_tmp=*point_msg;
+void readCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
+{
+
+    // double gettime = ros::Time::now().toSec();
+
+    //ROS_INFO("1");
+    laser_geometry::LaserProjection p;
+
+    sensor_msgs::PointCloud2 pointcloud_tmp;
+
+    double scan_time,scan_diff,point_scan_diff,point_cloud_time;
+
+    scan_time= scan_msg->header.stamp.toSec();
+    //scan_diff=scan_time-scan_time_old;
+    //scan_time_old=scan_time;
+    p.projectLaser(*scan_msg,pointcloud_tmp,-1.0,3);//1.0 - 2.0  or -1.0
+
+    point_cloud_time = pointcloud_tmp.header.stamp.toSec();
+
+    //std::cout << "scantime is :;:::"<<scan_time <<std::endl;
+    //std::cout << "pointclou is :::::"<< point_cloud_time <<std::endl;
+    //point_scan_diff=point_cloud_time-scan_time;
+    pointcloud_tmp.header.frame_id="/camera";
+
+
 
     int x_idx = pcl::getFieldIndex(pointcloud_tmp,"x");
     int y_idx = pcl::getFieldIndex(pointcloud_tmp,"y");
@@ -38,12 +61,10 @@ void readCallback(const sensor_msgs::PointCloud2::ConstPtr& point_msg){
             }
 
         //std::cout<<i<<" : "<<pt[0]<<" "<<pt[1]<<" "<<pt[2]<<" "<<pt[3]<<std::endl;
-        std::cout<< pt[0]<<" "<<pt[1]<<" "<<pt[2]<<std::endl;
+        std::cout<< pt[0]<<","<<pt[1]<<","<<pt[2]<<std::endl;
         xyz_offset += pointcloud_tmp.point_step;
-
-
-
     }
+
 
 
 
@@ -56,7 +77,7 @@ int main(int argc, char **argv){
 
     fout.open("/home/lixin/pointcloudxyz");
 
-    sub = n.subscribe("laser_cloud_surround",1,readCallback);
+    sub = n.subscribe("sync_scan_cloud_filtered",1,readCallback);
 
 
 
