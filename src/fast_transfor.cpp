@@ -38,12 +38,12 @@ void handle_read(char * buf,boost::system::error_code ec, std::size_t bytes_tran
 
 }
 
-
+laser_geometry::LaserProjection p;
 void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
 {
 
 
-    laser_geometry::LaserProjection p;
+
 
     sensor_msgs::PointCloud2 pointcloud_tmp;
 
@@ -60,9 +60,9 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     pointcloud_tmp.header.frame_id="/camera";
 
     Eigen::Matrix4f Tm= Eigen::Matrix4f::Identity();
-    Eigen::Matrix4f Tm1 = Eigen::Matrix4f::Identity();
-    Eigen::Matrix4f Tm2 = Eigen::Matrix4f::Identity();
-    Eigen::Matrix4f Tm3 = Eigen::Matrix4f::Identity();
+    //Eigen::Matrix4f Tm1 = Eigen::Matrix4f::Identity();
+    //Eigen::Matrix4f Tm2 = Eigen::Matrix4f::Identity();
+    //Eigen::Matrix4f Tm3 = Eigen::Matrix4f::Identity();
 
     bool isok(false);
     char bufread[10];
@@ -130,6 +130,7 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
         }
     }
     time_now = serial_time;
+    sum = (double) sum;
 
     double endtime = serial_time - scan_time;pointcloud_tmp.header.stamp.toSec();
     //std::cout << endtime <<std::endl;
@@ -151,10 +152,10 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
 
 
     //w is the angle of lidar
-    w =(sum /20 );//-180 ;
+    w =((double)sum /20.0 );//-180 ;
     last_endtime = endtime;
     last_sum = sum;
-    float theta=3.1415926 * w / 180;
+    double theta=3.1415926 * w / 180;
     //std::cout <<"last_avg_v:"<<last_avg_v<<"avg_v:"<<avg_v<<"endtime*avg_v:"<<endtime*avg_v<<"sum:"<<sum<<"w:"<<w<<std::endl;
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -171,8 +172,8 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     transform = Tm;
     Eigen::Matrix4f t_transform = Eigen::Matrix4f::Identity();
     double err_theta_z(0);
-    err_theta_z=0.6* 0.0174  ;//0.0174 1du
-    double offset_r = 0.04;
+    err_theta_z=0.604000* 0.0174  ;//0.0174 1du
+    double offset_r = 0.04000;
     t_transform(0,0) = cos(err_theta_z);
     t_transform(1,0)  = -sin(err_theta_z);
     t_transform(0,1) = sin(err_theta_z);
@@ -196,6 +197,8 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
 
     transform(0,0)=1;
     transform(3,3) = 1;
+    //std::cout << (double)theta*180.0/3.1415926<<std::endl;
+
     for (size_t i = 0;i<pointcloud_tmp.width * pointcloud_tmp.height;++i)
     {
 
@@ -203,8 +206,9 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
         Eigen::Vector4f pt_out;
 
 
-        ntheta = theta+(0.025/8*avg_v*3.1415926/180/20)+(((135+(double)(atan2(pt[1], pt[0])*180/3.14159265))/270)*avg_v*0.025/20*3/4*3.1415926/180);
-
+        ntheta = theta+((0.025*3.14159265*(double)avg_v/180/20/8)+
+                        (((135+(double)(atan2(pt[1], pt[0])*180/3.14159265)))*(double)avg_v*0.025/20*3/4*3.1415926/180/270))
+                ;
 
 
 
@@ -300,7 +304,7 @@ int main(int argc,char **argv)
     ros::init(argc,argv,"laser_geometry_node");
     ros::NodeHandle n;
     pub=n.advertise<sensor_msgs::PointCloud2>("sync_scan_cloud_filtered",1);
-    sub=n.subscribe("first",1,lCallback);
+    sub=n.subscribe("/first",1,lCallback);
 
 
 
