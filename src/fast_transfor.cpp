@@ -30,7 +30,7 @@ double time_before,time_now;
 double sum_before,sum_now;
 
 static double scan_time_old=0;
-double last_avg_v(7200);
+double last_avg_v(6000);//7200
 
 //vector<double> time_stamp;
 //vector<double> sum_vector;
@@ -41,8 +41,6 @@ void handle_read(char * buf,boost::system::error_code ec, std::size_t bytes_tran
 laser_geometry::LaserProjection p;
 void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
 {
-
-
 
 
     sensor_msgs::PointCloud2 pointcloud_tmp;
@@ -141,14 +139,15 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
 
     if(sum_now < sum_before)
         sum_now += 7200;
-    avg_v = last_avg_v;//(((sum_before - sum_now)/(time_before - time_now)));
+    avg_v = last_avg_v;
+    //avg_v = (sum_before - sum_now)/(time_before - time_now);
     //std::cout << (sum_before-sum_now)/(time_before-time_now)<<std::endl;
     sum = sum-endtime * avg_v ;
     if(sum < 0)
         sum +=7200;
     if(sum>7200) sum-=7200;
     time_before = time_now;
-    sum_before = sum;
+    sum_before = sum_now;
 
 
     //w is the angle of lidar
@@ -198,7 +197,33 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     transform(0,0)=1;
     transform(3,3) = 1;
     //std::cout << (double)theta*180.0/3.1415926<<std::endl;
+     // ==================================================================================
+    //std::cout <<"-------------------------------"<<std::endl;
+        std::ofstream  fout1;
+    std::ostringstream oss1;
+    
+    oss1 << "/home/lixin/save/all.txt";
+    
+    fout1.open(oss1.str().c_str());
+    fout1 <<avg_v/20<<" "<<endtime<<" "<<avg_v*endtime/20<<" "<<w<<std::endl;
+     std::cout<<avg_v/20<<" "<<endtime<<" "<<avg_v*endtime/20<<" "<<w<<std::endl;
+    
 
+
+
+
+
+    std::ofstream fout;
+    std::ostringstream oss;
+    oss << "/home/lixin/save1/"<<pointcloud_tmp.header.stamp<<".txt";
+    //oss1 << "/home/lixin/save/all.txt";
+    fout.open(oss.str().c_str());
+    //fout.open(oss1.str().c_str());
+    fout <<avg_v/20<<std::endl;
+    fout <<endtime<<std::endl;
+     fout <<avg_v*endtime/20<<std::endl;
+     fout <<w<<std::endl;
+    //=============================================================================================
     for (size_t i = 0;i<pointcloud_tmp.width * pointcloud_tmp.height;++i)
     {
 
@@ -206,12 +231,11 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
         Eigen::Vector4f pt_out;
 
 
-        ntheta = theta+((0.025*3.14159265*(double)avg_v/180/20/8)+
-                        (((135+(double)(atan2(pt[1], pt[0])*180/3.14159265)))*(double)avg_v*0.025/20*3/4*3.1415926/180/270))
-                ;
-
-
-
+        //ntheta = theta//+((0.025*3.14159265*(double)avg_v/180/20/8)+
+                    // ntheta = theta   +(((135+(double)(atan2(pt[1], pt[0])*180/3.14159265)))*(double)avg_v*0.025/20*3/4*3.1415926/180/270);
+         ntheta = theta+((0.025*3.14159265*(double)avg_v/180/20/8)+(((135+(double)(atan2(pt[1], pt[0])*180/3.14159265)))*(double)avg_v*0.025/20*3/4*3.1415926/180/270));
+         //fout <<ntheta *180 /3.1415926<<std::endl;
+  
 
         transform(1,1)=cos(ntheta);
         transform(1,2)=-sin(ntheta);
@@ -259,6 +283,7 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
         memcpy(&(pointcloud_tmp.data[xyz_offset[0]]),&pt_out[1], sizeof(float));
         memcpy(&pointcloud_tmp.data[xyz_offset[1]],&pt_out[2], sizeof(float));
 
+        foutlaser<< xyz_offset[0]<<","<<xyz_offset[1]<<","<<xyz_offset[2]<<std::endl;
         xyz_offset += pointcloud_tmp.point_step;
 
 
@@ -267,7 +292,7 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
 
     ok++;
 
-
+    fout1.close();
 
     pub.publish(pointcloud_tmp);
 
@@ -281,8 +306,8 @@ int main(int argc,char **argv)
 
 
     fout.open("/home/lixin/data.csv");
-    foutlaser.open("/home/lixin/datalaser.csv");
-    std::cout <<"....................1....................."<<std::endl;
+    foutlaser.open("/home/lixin/datalaser.txt");
+    //std::cout <<"....................1....................."<<std::endl;
 
 
 
@@ -333,6 +358,7 @@ int main(int argc,char **argv)
 
 
     }
+    foutlaser.close();
     std::cout <<"....................2....................."<<std::endl;
     //std::cout <<"....................2....................."<<std::endl;
     ////////stopAA550A020C
@@ -360,7 +386,8 @@ int main(int argc,char **argv)
     boost::asio::write(sp,boost::asio::buffer("\x02",1));
     boost::asio::write(sp,boost::asio::buffer("\xFc",1));
     fout.close();
-    foutlaser.close();
+    
+    //fout1.close();
     boost::asio::write(sp,boost::asio::buffer("\xAA",1));
     boost::asio::write(sp,boost::asio::buffer("\x55",1));
     boost::asio::write(sp,boost::asio::buffer("\xFA",1));
