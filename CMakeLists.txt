@@ -13,8 +13,10 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   std_msgs
   tf
+        message_generation
 )
 
+find_package(PCL REQUIRED)
 
 find_package(Boost REQUIRED COMPONENTS system thread)
 
@@ -58,6 +60,10 @@ find_package(Eigen REQUIRED)
 #   Message1.msg
 #   Message2.msg
 # )
+add_message_files(
+        FILES
+        HyperPara.msg
+)
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -78,6 +84,12 @@ find_package(Eigen REQUIRED)
 #   DEPENDENCIES
 #   sensor_msgs#   std_msgs
 # )
+generate_messages(
+        DEPENDENCIES
+        std_msgs
+        sensor_msgs
+        loam_tools
+)
 
 ###################################
 ## catkin specific configuration ##
@@ -89,6 +101,7 @@ find_package(Eigen REQUIRED)
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
+        CATKIN_DEPENDS message_runtime
 #  INCLUDE_DIRS include
 #  LIBRARIES laser_tools
 #  CATKIN_DEPENDS Boost Eigen angles cmake_modules pcl_ros roscpp sensor_msgs std_msgs tf
@@ -106,6 +119,14 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
  ${Boost_INCLUDE_DIRS}
     ${Eigen_INCLUDE_DIRS}
+        ${PCL_INCLUDE_DIRS}
+        /usr/local/include # Location when using 'make system_install'
+        /usr/include       # More usual location (e.g. when installing using a package)
+)
+
+link_directories(
+        /usr/local/lib # Location when using 'make system_install'
+        /usr/lib       # More usual location (e.g. when installing using a package)
 )
 
 ## Declare a cpp library
@@ -119,6 +140,9 @@ include_directories(
  add_executable(sum_pointcloud src/sum_pointcloud.cpp)
  add_executable(laser_transfor_new src/laser_transfor_new.cpp)
  add_executable(fast_transfor src/fast_transfor.cpp)
+
+add_executable(hyper_transform src/hyper_transform.cpp)
+
 ## as an example, message headers may need to be generated before nodes
 # add_dependencies(laser_tools_node laser_tools_generate_messages_cpp)
 
@@ -126,10 +150,12 @@ include_directories(
 # target_link_libraries(laser_tools_node
 #   ${catkin_LIBRARIES}
 # )
-target_link_libraries(laser_transfor ${catkin_LIBRARIES})
-target_link_libraries(laser_transfor_new ${catkin_LIBRARIES})
-target_link_libraries(sum_pointcloud ${catkin_LIBRARIES})
-target_link_libraries(fast_transfor ${catkin_LIBRARIES})
+target_link_libraries(laser_transfor ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+target_link_libraries(laser_transfor_new ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+target_link_libraries(sum_pointcloud ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+target_link_libraries(fast_transfor ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+
+target_link_libraries(hyper_transform ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 #############
 ## Install ##
 #############

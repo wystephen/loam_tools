@@ -61,6 +61,9 @@
   <run_depend>tf</run_depend>
 	<run_depend>laser_geometry</run_depend>
 
+  <!--This two line use to add self-difine msg-->
+  <build_depend>message_generation</build_depend>
+  <run_depend>message_runtime</run_depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

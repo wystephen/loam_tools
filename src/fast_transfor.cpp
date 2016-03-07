@@ -12,6 +12,8 @@
 #include <sstream>
 
 #include <vector>
+
+#define  SET_V 600
 ros::Subscriber sub;
 ros::Publisher pub;
 
@@ -30,7 +32,7 @@ double time_before,time_now;
 double sum_before,sum_now;
 
 static double scan_time_old=0;
-double last_avg_v(6000);//7200
+double last_avg_v(SET_V);//7200
 
 //vector<double> time_stamp;
 //vector<double> sum_vector;
@@ -207,10 +209,6 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     fout1.open(oss1.str().c_str());
     fout1 <<avg_v/20<<" "<<endtime<<" "<<avg_v*endtime/20<<" "<<w<<std::endl;
      std::cout<<avg_v/20<<" "<<endtime<<" "<<avg_v*endtime/20<<" "<<w<<std::endl;
-    
-
-
-
 
 
     std::ofstream fout;
@@ -243,9 +241,6 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
         transform(2,2)=cos(ntheta);
         transform(2,3)=cos(ntheta)* offset_r ;
         transform(1,3)=-sin(ntheta)*  offset_r ;
-
-
-
 
 
 
