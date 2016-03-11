@@ -15,6 +15,9 @@
 #include <pcl_ros/point_cloud.h>
 
 #include  <vector>
+#include <queue>
+#include <deque>
+
 #include <sensor_msgs/LaserScan.h>
 #include <std_msgs/String.h>
 
@@ -33,26 +36,24 @@ ros::Publisher pub;
 boost::asio::io_service io;
 boost::asio::serial_port sp(io,"/dev/ttyUSB0");
 
-boost::mutex io_mutex;
 
+//mutex and lock
 typedef boost::shared_lock<boost::shared_mutex> readLock;
 typedef boost::unique_lock<boost::shared_mutex> writeLock;
 
 boost::shared_mutex rwmutex;
 
-
+//angle data
 double global_angle;
 char read_buf[10];
-
 
 struct angle_with_time{
     double time;
     double angle;
 };
 
-
 angle_with_time global_angle_with_time;
-
+std::deque<angle_with_time> angle_queue;
 
 //hyper_para struct
 struct HyperParameter{
@@ -92,8 +93,17 @@ double readonly(){
     return global_angle;
 }
 //read only function return angle with time struct data
-angle_with_time readonly_time(){
+angle_with_time readOnly_tiem(double laser_time){
     readLock rdlock(rwmutex);
+    for(int i(angle_queue.size()-1);i--;i>=1)
+    {
+        if(fabs(angle_queue[i].time-laser_time)<0.015 && fabs(angle_queue[i-1].time-laser_time) < 0.015)
+        {
+            //direct use it
+            return angle_queue[i];
+        }
+    }
+
     return global_angle_with_time;
 }
 
@@ -101,7 +111,8 @@ angle_with_time readonly_time(){
 laser_geometry::LaserProjection p;
 void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
 {
-
+    angle_with_time angle_t;
+    angle_t = readOnly_tiem(scan_msg->header.stamp.toSec());
 
     sensor_msgs::PointCloud2 pointcloud_tmp;
 
@@ -119,19 +130,14 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
 
 
     double angle(0.0);
-    angle_with_time angle_t;
-    std::cout << " angle init."<<std::endl;
-    if(true)
-    {
 
-        //angle = global_angle;
-        angle_t = readonly_time();
-
-    }
 
     /************************************************************************************************/
     //std::cout << "angle:"<<angle_t.angle<<std::endl;
-    std::cout <<"[laser_time:angle_time:diff]:"<< scan_msg->header.stamp.toSec()<<":"<<angle_t.time<<":"<<angle_t.time-scan_msg->header.stamp.toSec()<<std::endl;
+    std::cout <<"[sys_s_diff:sys_l_diff:l_s_diff]:"<<
+            ros::Time::now().toSec()-angle_t.time<<":"<<
+            ros::Time::now().toSec()-scan_time<<":"<<
+            angle_t.time-scan_msg->header.stamp.toSec()<<std::endl;
     /*********************************************************************************************************************************************************/
 
     double avg_v((double) global_para.avg_v / 20.0 / 180.0 * M_PI);
@@ -203,8 +209,6 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
         transform(1,3)=-sin(ntheta)*  offset_r ;
 
 
-
-
         bool max_range_point = false;
         int distance_ptr_offset = i * pointcloud_tmp.point_step + pointcloud_tmp.fields[dist_idx].offset;
         float * distance_ptr = (dist_idx<0?NULL:(float*)(&pointcloud_tmp.data[distance_ptr_offset]));
@@ -267,6 +271,9 @@ void writeOnly_time(double angle,double time){
     writeLock wtlock(rwmutex);
     global_angle_with_time.angle=angle;
     global_angle_with_time.time = time;
+    angle_queue.push_back(global_angle_with_time);
+    if(angle_queue.size() >= 10)
+        angle_queue.pop_front();
 }
 
 
@@ -314,7 +321,74 @@ void serial_process()
             }
         }
     }
+}
 
+void seril_fast()
+{
+    int a(0);
+    int b(0);
+    int c(0);
+    int sum(0);
+    double the_time;
+
+    while(ros::ok())
+    {
+        memset(read_buf,0,10);
+
+        boost::asio::read(sp,boost::asio::buffer(read_buf,1));
+        the_time = ros::Time::now().toSec();
+
+        if((read_buf[0] & 0xff) == 0xAA)
+        {
+
+            boost::asio::read(sp,boost::asio::buffer(read_buf,3));
+            a = read_buf[1] & 0xff;
+            b = read_buf[2] & 0xff;
+            sum = a * 256 + b;
+
+            writeOnly_time((double) sum /20.0/180 * M_PI,the_time);
+
+            //boost::thread update(&writeOnly_time,((double) sum/20.0/180.0/M_PI),the_time);
+            //update.detach();
+
+        }else if((read_buf[0] & 0xff) == 0x55)
+        {
+            boost::asio::read(sp,boost::asio::buffer(read_buf,2));
+            a = read_buf[0] & 0xff;
+            b = read_buf[1] & 0xff;
+            sum = a * 256 + b;
+            writeOnly_time((double) sum /20.0/180 * M_PI,the_time);
+
+            //boost::thread update(&writeOnly_time,((double) sum/20.0/180.0/M_PI),the_time);
+           // update.detach();
+
+        }
+        /********************************************************** /
+        else if(step_index == 2)
+        {
+            a = 0xff & read_buf[0];
+            step_index ++;
+        } else if(step_index == 3)
+        {
+            b = 0xff & read_buf[0];
+            step_index ++;
+        }else if(step_index == 4)
+        {
+            c = 0xff & read_buf[0];
+            step_index = 0;
+            if((b>-1))// && (c == ((a+b) % 256)))
+            {
+                sum = a * 256 +b ;
+                //writeOnly_time((double) sum / 20.0/180.0/M_PI,the_time);
+                boost::thread update(&writeOnly_time,((double) sum/20.0/180.0/M_PI),the_time);
+                update.detach();
+            }
+        }
+         /************************************************************************/
+
+    }
+    rotation_stop();
+    return;
 
 }
 
@@ -344,8 +418,11 @@ int main(int argc,char **argv)
 
     //ros::spin();
 
-    boost::thread serial_process_thread(&serial_process);
+    //boost::thread serial_process_thread(&serial_process);
+    boost::thread serial_process_thread(&seril_fast);
     serial_process_thread.detach();
+
+    sleep(2);
 
     //serial_process_thread.join();
     //serial_process_thread.detach();
