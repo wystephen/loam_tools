@@ -42,6 +42,15 @@ double global_angle;
 char read_buf[10];
 
 
+struct angle_with_time{
+    double time;
+    double angle;
+};
+
+
+angle_with_time global_angle_with_time;
+
+
 //hyper_para struct
 struct HyperParameter{
     int avg_v;
@@ -50,6 +59,7 @@ struct HyperParameter{
 
 }global_para;
 
+//device stop function
 bool rotation_stop(){
     //stop  AA 55 0A 02 0C
     boost::asio::write(sp,boost::asio::buffer("\xAA",1));
@@ -61,6 +71,7 @@ bool rotation_stop(){
 
 }
 
+//device start function
 bool rotation_start()
 {
     boost::asio::write(sp,boost::asio::buffer("\xAA",1));
@@ -70,32 +81,54 @@ bool rotation_start()
     boost::asio::write(sp,boost::asio::buffer("\xFB",1));
     return true;
 }
+
+//return angle only,use mutex.
 double readonly(){
     readLock rdlock(rwmutex);
 
     return global_angle;
 }
+//read only function return angle with time struct data
+angle_with_time readonly_time(){
+    readLock rdlock(rwmutex);
+    return global_angle_with_time;
+}
+
+
 void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
 {
     double angle(0.0);
+    angle_with_time angle_t;
     std::cout << " angle init."<<std::endl;
     if(true)
     {
 
         //angle = global_angle;
-        angle = readonly();
+        angle_t = readonly_time();
 
     }
-    std::cout << "angle:"<<angle<<std::endl;
+    std::cout << "angle:"<<angle_t.angle<<std::endl;
+    std::cout <<"[laser_time:angle_time:diff]:"<< scan_msg->header.stamp.toSec()<<":"<<angle_t.time<<":"<<angle_t.time-scan_msg->header.stamp.toSec()<<std::endl;
     if(!ros::ok()){
         rotation_stop();
     }
 
 }
+
+
+//use mutex
 void writeOnly(double ang){
     writeLock wtlock(rwmutex);
     global_angle = ang;
 }
+void writeOnly_time(double angle,double time){
+    writeLock wtlock(rwmutex);
+    global_angle_with_time.angle=angle;
+    global_angle_with_time.time = time;
+}
+
+
+
 void serial_process()
 {
     if(!ros::ok())
@@ -108,11 +141,14 @@ void serial_process()
         if (sp.is_open()) {
             boost::asio::read(sp, boost::asio::buffer(read_buf));
         }
-        std::cout <<"read buf"<<std::endl;
+        double the_time = ros::Time::now().toSec();
+        //std::cout <<"read buf"<<std::endl;
 
         for (int i = 0; i < 10; i++) {
             //std::cout << "i:"<<i<<std::endl;
             //read_buf[i] = read_buf[i] & 0xff;
+
+            //process the
             if ((read_buf[i] & 0xff) == 0x55) {
                 int a = 0xff & read_buf[i + 1];
                 int b = 0xff & read_buf[i + 2];
@@ -121,20 +157,21 @@ void serial_process()
                 {
                     int sum = a * 256 + b;
                     if (sum < 7201) {
+                        if(i<5)
+                            the_time -=0.01;
                        // boost::mutex::scoped_lock(io_mutex);
                         //std::cout << "sum:"<<sum << std::endl;io_lock.lock();
 
                         //global_angle = (double)sum / 20 / 180 * M_PI;
-                        writeOnly((double) sum /20/180 * M_PI);
-                        std::cout <<"global angle:"<<global_angle<<std::endl;
+                        //writeOnly((double) sum /20.0/180 * M_PI);
+                        writeOnly_time((double) sum /20.0/180 * M_PI,the_time);
+
+                        //std::cout <<"global angle:"<<global_angle<<std::endl;
                     }
                 }
             }
         }
     }
-
-
-
 
 
 }
@@ -163,11 +200,12 @@ int main(int argc,char **argv)
 
     rotation_start();
 
-    ros::spin();
+    //ros::spin();
 
     boost::thread serial_process_thread(&serial_process);
+    serial_process_thread.detach();
 
-    serial_process_thread.join();
+    //serial_process_thread.join();
     //serial_process_thread.detach();
 
     while(ros::ok()){
