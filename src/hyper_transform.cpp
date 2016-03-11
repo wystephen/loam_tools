@@ -93,10 +93,10 @@ double readonly(){
     return global_angle;
 }
 //read only function return angle with time struct data
-angle_with_time readOnly_tiem(double laser_time){
+angle_with_time readOnly_time(double laser_time){
     readLock rdlock(rwmutex);
     angle_with_time tmp_a_t;
-    for(int i(angle_queue.size()-1);i--;i>=1)
+    for(int i(angle_queue.size()-1);i--;i >= 1)
     {
         if(fabs(angle_queue[i].time-laser_time)<0.015 && fabs(angle_queue[i-1].time-laser_time) < 0.015)
         {
@@ -104,11 +104,12 @@ angle_with_time readOnly_tiem(double laser_time){
             return angle_queue[i];
             //liner interpolartion
             tmp_a_t.time = laser_time;
+            /********************************************************* /
             if(angle_queue[i].angle<angle_queue[i+1].angle)
             {
                 tmp_a_t.angle = angle_queue[i-1].angle +
-                        ((angle_queue[i].angle+(7200.0/20.0/180.0 * M_PI))-angle_queue[i-1].angle)
-                        *(laser_time-angle_queue[i-1].time)/(angle_queue[i].time - angle_queue[i-1].time);
+                        ((angle_queue[i].angle+((double) 7200.0/20.0/180.0 * M_PI))-angle_queue[i-1].angle)
+                        *(laser_time - angle_queue[i-1].time)/ (angle_queue[i].time - angle_queue[i-1].time);
                 if(tmp_a_t.angle>(7200.0/20.0/180.0)*M_PI)
                 {
                     tmp_a_t.angle -= (7200.0/20.0/180.0*M_PI);
@@ -119,6 +120,7 @@ angle_with_time readOnly_tiem(double laser_time){
                                 *(laser_time-angle_queue[i-1].time)/(angle_queue[i].time - angle_queue[i-1].time);
 
             }
+             /******************************************/
             // can update global parameter avg_v
             if(angle_queue[i+1].angle<angle_queue[i-3].angle)
             {
@@ -128,6 +130,12 @@ angle_with_time readOnly_tiem(double laser_time){
                 global_para.avg_v = (double)(angle_queue[i+1].angle - angle_queue[i-3].angle)
                                     /(angle_queue[i+1].time-angle_queue[i-3].time)/M_PI * 20.0 * 180.0;
             }
+            if(fabs(laser_time-angle_queue[i].time)<0.005)
+                tmp_a_t.angle = angle_queue[i].angle;
+            else{
+                tmp_a_t.angle = angle_queue[i].angle + (laser_time - angle_queue[i].time) * global_para.avg_v;
+            }
+
             return tmp_a_t;
         }
     }
@@ -140,7 +148,7 @@ laser_geometry::LaserProjection p;
 void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
 {
     angle_with_time angle_t;
-    angle_t = readOnly_tiem(scan_msg->header.stamp.toSec());
+    angle_t = readOnly_time(scan_msg->header.stamp.toSec());
 
     sensor_msgs::PointCloud2 pointcloud_tmp;
 
@@ -160,7 +168,9 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     double angle(0.0);
 
 
-    /************************************************************************************************/
+    /************************************************************************************************ /
+    //time diff output code
+
     //std::cout << "angle:"<<angle_t.angle<<std::endl;
     std::cout <<"[sys_s_diff:sys_l_diff:l_s_diff]:"<<
             ros::Time::now().toSec()-angle_t.time<<":"<<
@@ -169,18 +179,24 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
             global_para.avg_v<<":"<<std::endl;
     /*********************************************************************************************************************************************************/
 
+    /***********************************************************************************************************************/
+    std::cout <<angle_t.angle<<std::endl;
+
     double avg_v((double) global_para.avg_v / 20.0 / 180.0 * M_PI);
-    angle = angle_t.angle - (angle_t.time-scan_msg->header.stamp.toSec()) * avg_v;
-
+    angle = angle_t.angle ;//- (angle_t.time-scan_msg->header.stamp.toSec()) * avg_v;
+while(angle < 0.0 || angle > (7200.0/20/180.0 *M_PI))
+{
     if(angle<0.0){
-        angle += (7200.0/180.0 * M_PI);
+        angle += (7200.0/20/180.0 * M_PI);
     }
-    if(angle > (7200.0/180.0 * M_PI))
+    if(angle > (7200.0/20/180.0 * M_PI))
     {
-        angle -= (7200.0/180.0 * M_PI);
+        angle -= (7200.0/20/180.0 * M_PI);
     }
+}
 
-    double theta = angle;
+
+    double theta = angle;// radian
     double err_theta_z = global_para.error_theta_z;
     double offset_r = global_para.offset_r;
 
@@ -194,8 +210,8 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     t_transform(1,0)  = -sin(err_theta_z);
     t_transform(0,1) = sin(err_theta_z);
     t_transform(1,1) = cos(err_theta_z);
-    t_transform(2,2) = 1;
-    t_transform(3,3) = 1;
+    t_transform(2,2) = 1.0;
+    t_transform(3,3) = 1.0;
 
     /////////////////////////////////////////////////
     int x_idx = pcl::getFieldIndex(pointcloud_tmp,"x");
@@ -226,7 +242,8 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
 
         //ntheta = theta//+((0.025*3.14159265*(double)avg_v/180/20/8)+
         // ntheta = theta   +(((135+(double)(atan2(pt[1], pt[0])*180/3.14159265)))*(double)avg_v*0.025/20*3/4*3.1415926/180/270);
-        ntheta = theta+((0.025* M_PI *(double)avg_v/180/20/8)+(((135+(double)(atan2(pt[1], pt[0])*180/3.14159265)))*(double)avg_v*0.025/20*3/4*3.1415926/180/270));
+        //ntheta = theta+((0.025* M_PI *(double)avg_v/180/20/8)+(((135+(double)(atan2(pt[1], pt[0])*180/M_PI)))*(double)avg_v*0.025/20*3/4*3.1415926/180/270));
+        ntheta = theta - (1-(M_PI+atan2(pt[1],pt[0]))/2/M_PI)*(avg_v*0.025/20.0/180*M_PI);
         //fout <<ntheta *180 /3.1415926<<std::endl;
 
 
@@ -266,13 +283,11 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
         pt_out[2] = - pt_out[2];
 
 
-
         memcpy(&pointcloud_tmp.data[xyz_offset[2]],&pt_out[0], sizeof(float));
         memcpy(&(pointcloud_tmp.data[xyz_offset[0]]),&pt_out[1], sizeof(float));
         memcpy(&pointcloud_tmp.data[xyz_offset[1]],&pt_out[2], sizeof(float));
 
         xyz_offset += pointcloud_tmp.point_step;
-
 
     }
 
@@ -373,8 +388,6 @@ void seril_fast()
 
             writeOnly_time((double) sum /20.0/180 * M_PI,the_time);
 
-            //boost::thread update(&writeOnly_time,((double) sum/20.0/180.0/M_PI),the_time);
-            //update.detach();
 
         }else if((read_buf[0] & 0xff) == 0x55)
         {
@@ -384,32 +397,9 @@ void seril_fast()
             sum = a * 256 + b;
             writeOnly_time((double) sum /20.0/180 * M_PI,the_time);
 
-            //boost::thread update(&writeOnly_time,((double) sum/20.0/180.0/M_PI),the_time);
-           // update.detach();
 
         }
-        /********************************************************** /
-        else if(step_index == 2)
-        {
-            a = 0xff & read_buf[0];
-            step_index ++;
-        } else if(step_index == 3)
-        {
-            b = 0xff & read_buf[0];
-            step_index ++;
-        }else if(step_index == 4)
-        {
-            c = 0xff & read_buf[0];
-            step_index = 0;
-            if((b>-1))// && (c == ((a+b) % 256)))
-            {
-                sum = a * 256 +b ;
-                //writeOnly_time((double) sum / 20.0/180.0/M_PI,the_time);
-                boost::thread update(&writeOnly_time,((double) sum/20.0/180.0/M_PI),the_time);
-                update.detach();
-            }
-        }
-         /************************************************************************/
+
 
     }
     rotation_stop();
@@ -436,8 +426,8 @@ int main(int argc,char **argv)
 
 
     global_para.avg_v = 7200;
-    global_para.offset_r = 0.045000;
-    global_para.error_theta_z = 0.604000 * 0.0174;
+    global_para.offset_r = 0.065000;
+    global_para.error_theta_z = 0.304000 * 0.0174;
 
     rotation_start();
 
