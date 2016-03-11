@@ -19,6 +19,9 @@
 #include <std_msgs/String.h>
 
 
+#include "laser_geometry/laser_geometry.h"
+
+
 #define PARAMENTER_OPTIMATION
 
 //ros::Subscriber sub_para;
@@ -95,8 +98,26 @@ angle_with_time readonly_time(){
 }
 
 
+laser_geometry::LaserProjection p;
 void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
 {
+
+
+    sensor_msgs::PointCloud2 pointcloud_tmp;
+
+    double scan_time,scan_diff,point_scan_diff,point_cloud_time;
+
+    scan_time= scan_msg->header.stamp.toSec();
+
+    p.projectLaser(*scan_msg,pointcloud_tmp,-1.0,3);//1.0 - 2.0  or -1.0
+
+    point_cloud_time = pointcloud_tmp.header.stamp.toSec();
+
+    point_scan_diff=point_cloud_time-scan_time;
+    pointcloud_tmp.header.frame_id="/camera";
+
+
+
     double angle(0.0);
     angle_with_time angle_t;
     std::cout << " angle init."<<std::endl;
@@ -107,8 +128,129 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
         angle_t = readonly_time();
 
     }
-    std::cout << "angle:"<<angle_t.angle<<std::endl;
+
+    /************************************************************************************************/
+    //std::cout << "angle:"<<angle_t.angle<<std::endl;
     std::cout <<"[laser_time:angle_time:diff]:"<< scan_msg->header.stamp.toSec()<<":"<<angle_t.time<<":"<<angle_t.time-scan_msg->header.stamp.toSec()<<std::endl;
+    /*********************************************************************************************************************************************************/
+
+    double avg_v((double) global_para.avg_v / 20.0 / 180.0 * M_PI);
+    angle = angle_t.angle - (angle_t.time-scan_msg->header.stamp.toSec()) * avg_v;
+
+    if(angle<0.0){
+        angle += (7200.0/180.0 * M_PI);
+    }
+    if(angle > (7200.0/180.0 * M_PI))
+    {
+        angle -= (7200.0/180.0 * M_PI);
+    }
+
+    double theta = angle;
+    double err_theta_z = global_para.error_theta_z;
+    double offset_r = global_para.offset_r;
+
+    Eigen::Matrix4f transform = Eigen::Matrix4f::Identity();
+    Eigen::Matrix4f t_transform = Eigen::Matrix4f::Identity();
+
+
+    ///////////////////////////////////
+    //copy from fast_transform
+    t_transform(0,0) = cos(err_theta_z);
+    t_transform(1,0)  = -sin(err_theta_z);
+    t_transform(0,1) = sin(err_theta_z);
+    t_transform(1,1) = cos(err_theta_z);
+    t_transform(2,2) = 1;
+    t_transform(3,3) = 1;
+
+    /////////////////////////////////////////////////
+    int x_idx = pcl::getFieldIndex(pointcloud_tmp,"x");
+    int y_idx = pcl::getFieldIndex(pointcloud_tmp,"y");
+    int z_idx = pcl::getFieldIndex(pointcloud_tmp,"z");
+
+
+    //check if distance is available
+    int dist_idx = pcl::getFieldIndex(pointcloud_tmp,"distance");
+    //xyz_offset
+    Eigen::Array4i xyz_offset (pointcloud_tmp.fields[x_idx].offset,pointcloud_tmp.fields[y_idx].offset,pointcloud_tmp.fields[z_idx].offset,0);
+    double ntheta;
+    int static ok=0;
+
+
+    transform(0,0)=1;
+    transform(3,3) = 1;
+
+
+
+    //=============================================================================================
+    for (size_t i = 0;i<pointcloud_tmp.width * pointcloud_tmp.height;++i)
+    {
+
+        Eigen::Vector4f pt(*(float *)&pointcloud_tmp.data[xyz_offset[0]],*(float*)&pointcloud_tmp.data[xyz_offset[1]],*(float*)&pointcloud_tmp.data[xyz_offset[2]],1);
+        Eigen::Vector4f pt_out;
+
+
+        //ntheta = theta//+((0.025*3.14159265*(double)avg_v/180/20/8)+
+        // ntheta = theta   +(((135+(double)(atan2(pt[1], pt[0])*180/3.14159265)))*(double)avg_v*0.025/20*3/4*3.1415926/180/270);
+        ntheta = theta+((0.025*3.14159265*(double)avg_v/180/20/8)+(((135+(double)(atan2(pt[1], pt[0])*180/3.14159265)))*(double)avg_v*0.025/20*3/4*3.1415926/180/270));
+        //fout <<ntheta *180 /3.1415926<<std::endl;
+
+
+        transform(1,1)=cos(ntheta);
+        transform(1,2)=-sin(ntheta);
+        transform(2,1)=sin(ntheta);
+        transform(2,2)=cos(ntheta);
+        transform(2,3)=cos(ntheta)* offset_r ;
+        transform(1,3)=-sin(ntheta)*  offset_r ;
+
+
+
+
+        bool max_range_point = false;
+        int distance_ptr_offset = i * pointcloud_tmp.point_step + pointcloud_tmp.fields[dist_idx].offset;
+        float * distance_ptr = (dist_idx<0?NULL:(float*)(&pointcloud_tmp.data[distance_ptr_offset]));
+        if(!std::isfinite(pt[0]) || !std::isfinite(pt[1]) || !std::isfinite(pt[2]))
+        {
+            if (distance_ptr == NULL || !std::isfinite(*distance_ptr))   //Invalid point
+            {
+                pt_out = pt;
+            }else{//max range point
+                pt[0] = *distance_ptr; //Replace x with the x value saved in distance
+                pt_out = t_transform * pt;
+                pt_out = transform * pt_out;//
+                max_range_point = true;
+            }
+        }else{
+            pt_out = t_transform * pt;
+            pt_out = transform * pt_out;
+        }
+
+        if(max_range_point)
+        {
+            *(float*)(&pointcloud_tmp.data[distance_ptr_offset]) = pt_out[0];
+            pt_out[0] = std::numeric_limits<float> ::quiet_NaN();
+        }
+
+        pt_out[2] = - pt_out[2];
+
+
+
+        memcpy(&pointcloud_tmp.data[xyz_offset[2]],&pt_out[0], sizeof(float));
+        memcpy(&(pointcloud_tmp.data[xyz_offset[0]]),&pt_out[1], sizeof(float));
+        memcpy(&pointcloud_tmp.data[xyz_offset[1]],&pt_out[2], sizeof(float));
+
+        xyz_offset += pointcloud_tmp.point_step;
+
+
+    }
+
+
+    ok++;
+
+
+    pub.publish(pointcloud_tmp);
+
+
+
     if(!ros::ok()){
         rotation_stop();
     }

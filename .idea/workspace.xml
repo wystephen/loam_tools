@@ -76,7 +76,6 @@
     <list default="true" id="ee3ad99f-a30e-4e87-a0be-f6c818f03028" name="Default" comment="">
       <change type="DELETED" beforePath="$PROJECT_DIR$/CMakeLists.txt.user" afterPath="" />
       <change type="DELETED" beforePath="$PROJECT_DIR$/src/laser_transfor.cpp.autosave" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/hyper_transform.cpp" afterPath="$PROJECT_DIR$/src/hyper_transform.cpp" />
     </list>
     <ignored path="loam_tools.iws" />
@@ -122,8 +121,10 @@
         <entry file="file://$PROJECT_DIR$/src/fast_transfor.cpp">
           <provider selected="true" editor-type-id="text-editor">
             <state vertical-scroll-proportion="0.0">
-              <caret line="315" column="8" selection-start-line="315" selection-start-column="4" selection-end-line="319" selection-end-column="57" />
-              <folding />
+              <caret line="291" column="32" selection-start-line="291" selection-start-column="32" selection-end-line="291" selection-end-column="32" />
+              <folding>
+                <element signature="e#0#42#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -131,19 +132,16 @@
       <file leaf-file-name="hyper_transform.cpp" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/hyper_transform.cpp">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.6691176">
-              <caret line="160" column="44" selection-start-line="160" selection-start-column="44" selection-end-line="160" selection-end-column="44" />
+            <state vertical-scroll-proportion="0.4012605">
+              <caret line="137" column="25" selection-start-line="137" selection-start-column="25" selection-end-line="137" selection-end-column="25" />
               <folding>
                 <element signature="e#38#58#0" expanded="true" />
-                <element signature="e#787#847#1" expanded="false" />
-                <element signature="e#913#1000#1" expanded="false" />
-                <element signature="e#1014#1395#0" expanded="false" />
-                <element signature="e#1397#1753#0" expanded="false" />
-                <element signature="e#1755#1862#0" expanded="false" />
-                <element signature="e#1863#2018#0" expanded="false" />
-                <element signature="e#2549#2645#0" expanded="false" />
-                <element signature="e#2646#2805#0" expanded="false" />
-                <element signature="e#4293#5420#0" expanded="false" />
+                <element signature="e#832#892#1" expanded="false" />
+                <element signature="e#958#1045#1" expanded="false" />
+                <element signature="e#1059#1440#0" expanded="false" />
+                <element signature="e#1442#1798#0" expanded="false" />
+                <element signature="e#1800#1907#0" expanded="false" />
+                <element signature="e#1908#2063#0" expanded="false" />
               </folding>
             </state>
           </provider>
@@ -732,7 +730,7 @@
       <breakpoints>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/src/hyper_transform.cpp</url>
-          <line>75</line>
+          <line>78</line>
         </line-breakpoint>
       </breakpoints>
       <option name="time" value="1" />
@@ -760,7 +758,9 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
           <caret line="315" column="8" selection-start-line="315" selection-start-column="4" selection-end-line="319" selection-end-column="57" />
-          <folding />
+          <folding>
+            <element signature="e#0#42#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -770,15 +770,12 @@
           <caret line="22" column="0" selection-start-line="22" selection-start-column="0" selection-end-line="22" selection-end-column="0" />
           <folding>
             <element signature="e#38#58#0" expanded="true" />
-            <element signature="e#787#847#1" expanded="false" />
-            <element signature="e#913#1000#1" expanded="false" />
-            <element signature="e#1014#1395#0" expanded="false" />
-            <element signature="e#1397#1753#0" expanded="false" />
-            <element signature="e#1755#1862#0" expanded="false" />
-            <element signature="e#1863#2018#0" expanded="false" />
-            <element signature="e#2549#2645#0" expanded="false" />
-            <element signature="e#2646#2805#0" expanded="false" />
-            <element signature="e#4293#5420#0" expanded="false" />
+            <element signature="e#832#892#1" expanded="false" />
+            <element signature="e#958#1045#1" expanded="false" />
+            <element signature="e#1059#1440#0" expanded="false" />
+            <element signature="e#1442#1798#0" expanded="false" />
+            <element signature="e#1800#1907#0" expanded="false" />
+            <element signature="e#1908#2063#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -831,7 +828,9 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
           <caret line="315" column="8" selection-start-line="315" selection-start-column="4" selection-end-line="319" selection-end-column="57" />
-          <folding />
+          <folding>
+            <element signature="e#0#42#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -841,15 +840,12 @@
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
             <element signature="e#38#58#0" expanded="true" />
-            <element signature="e#787#847#1" expanded="false" />
-            <element signature="e#913#1000#1" expanded="false" />
-            <element signature="e#1014#1395#0" expanded="false" />
-            <element signature="e#1397#1753#0" expanded="false" />
-            <element signature="e#1755#1862#0" expanded="false" />
-            <element signature="e#1863#2018#0" expanded="false" />
-            <element signature="e#2549#2645#0" expanded="false" />
-            <element signature="e#2646#2805#0" expanded="false" />
-            <element signature="e#4293#5420#0" expanded="false" />
+            <element signature="e#832#892#1" expanded="false" />
+            <element signature="e#958#1045#1" expanded="false" />
+            <element signature="e#1059#1440#0" expanded="false" />
+            <element signature="e#1442#1798#0" expanded="false" />
+            <element signature="e#1800#1907#0" expanded="false" />
+            <element signature="e#1908#2063#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -902,7 +898,9 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
           <caret line="315" column="8" selection-start-line="315" selection-start-column="4" selection-end-line="319" selection-end-column="57" />
-          <folding />
+          <folding>
+            <element signature="e#0#42#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -912,15 +910,12 @@
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
             <element signature="e#38#58#0" expanded="true" />
-            <element signature="e#787#847#1" expanded="false" />
-            <element signature="e#913#1000#1" expanded="false" />
-            <element signature="e#1014#1395#0" expanded="false" />
-            <element signature="e#1397#1753#0" expanded="false" />
-            <element signature="e#1755#1862#0" expanded="false" />
-            <element signature="e#1863#2018#0" expanded="false" />
-            <element signature="e#2549#2645#0" expanded="false" />
-            <element signature="e#2646#2805#0" expanded="false" />
-            <element signature="e#4293#5420#0" expanded="false" />
+            <element signature="e#832#892#1" expanded="false" />
+            <element signature="e#958#1045#1" expanded="false" />
+            <element signature="e#1059#1440#0" expanded="false" />
+            <element signature="e#1442#1798#0" expanded="false" />
+            <element signature="e#1800#1907#0" expanded="false" />
+            <element signature="e#1908#2063#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -965,7 +960,9 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
           <caret line="15" column="18" selection-start-line="15" selection-start-column="18" selection-end-line="15" selection-end-column="18" />
-          <folding />
+          <folding>
+            <element signature="e#0#42#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -1009,7 +1006,9 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
           <caret line="15" column="18" selection-start-line="15" selection-start-column="18" selection-end-line="15" selection-end-column="18" />
-          <folding />
+          <folding>
+            <element signature="e#0#42#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -1025,7 +1024,9 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
           <caret line="15" column="14" selection-start-line="15" selection-start-column="14" selection-end-line="15" selection-end-column="14" />
-          <folding />
+          <folding>
+            <element signature="e#0#42#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -1062,14 +1063,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/fast_transfor.cpp">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0">
-          <caret line="315" column="8" selection-start-line="315" selection-start-column="4" selection-end-line="319" selection-end-column="57" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/sum_pointcloud.cpp">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
@@ -1098,21 +1091,28 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/src/fast_transfor.cpp">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0">
+          <caret line="291" column="32" selection-start-line="291" selection-start-column="32" selection-end-line="291" selection-end-column="32" />
+          <folding>
+            <element signature="e#0#42#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/src/hyper_transform.cpp">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.6691176">
-          <caret line="160" column="44" selection-start-line="160" selection-start-column="44" selection-end-line="160" selection-end-column="44" />
+        <state vertical-scroll-proportion="0.4012605">
+          <caret line="137" column="25" selection-start-line="137" selection-start-column="25" selection-end-line="137" selection-end-column="25" />
           <folding>
             <element signature="e#38#58#0" expanded="true" />
-            <element signature="e#787#847#1" expanded="false" />
-            <element signature="e#913#1000#1" expanded="false" />
-            <element signature="e#1014#1395#0" expanded="false" />
-            <element signature="e#1397#1753#0" expanded="false" />
-            <element signature="e#1755#1862#0" expanded="false" />
-            <element signature="e#1863#2018#0" expanded="false" />
-            <element signature="e#2549#2645#0" expanded="false" />
-            <element signature="e#2646#2805#0" expanded="false" />
-            <element signature="e#4293#5420#0" expanded="false" />
+            <element signature="e#832#892#1" expanded="false" />
+            <element signature="e#958#1045#1" expanded="false" />
+            <element signature="e#1059#1440#0" expanded="false" />
+            <element signature="e#1442#1798#0" expanded="false" />
+            <element signature="e#1800#1907#0" expanded="false" />
+            <element signature="e#1908#2063#0" expanded="false" />
           </folding>
         </state>
       </provider>
