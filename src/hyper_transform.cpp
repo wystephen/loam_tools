@@ -57,7 +57,7 @@ std::deque<angle_with_time> angle_queue;
 
 //hyper_para struct
 struct HyperParameter{
-    int avg_v;
+    double avg_v;
     double offset_r;
     double error_theta_z;
 
@@ -95,12 +95,40 @@ double readonly(){
 //read only function return angle with time struct data
 angle_with_time readOnly_tiem(double laser_time){
     readLock rdlock(rwmutex);
+    angle_with_time tmp_a_t;
     for(int i(angle_queue.size()-1);i--;i>=1)
     {
         if(fabs(angle_queue[i].time-laser_time)<0.015 && fabs(angle_queue[i-1].time-laser_time) < 0.015)
         {
             //direct use it
             return angle_queue[i];
+            //liner interpolartion
+            tmp_a_t.time = laser_time;
+            if(angle_queue[i].angle<angle_queue[i+1].angle)
+            {
+                tmp_a_t.angle = angle_queue[i-1].angle +
+                        ((angle_queue[i].angle+(7200.0/20.0/180.0 * M_PI))-angle_queue[i-1].angle)
+                        *(laser_time-angle_queue[i-1].time)/(angle_queue[i].time - angle_queue[i-1].time);
+                if(tmp_a_t.angle>(7200.0/20.0/180.0)*M_PI)
+                {
+                    tmp_a_t.angle -= (7200.0/20.0/180.0*M_PI);
+                }
+            }else{
+                tmp_a_t.angle = angle_queue[i-1].angle +
+                                ((angle_queue[i].angle)-angle_queue[i-1].angle)
+                                *(laser_time-angle_queue[i-1].time)/(angle_queue[i].time - angle_queue[i-1].time);
+
+            }
+            // can update global parameter avg_v
+            if(angle_queue[i+1].angle<angle_queue[i-3].angle)
+            {
+                global_para.avg_v = (double)(angle_queue[i+1].angle + (7200.0/20.0/180.0*M_PI) - angle_queue[i-3].angle)
+                        /(angle_queue[i+1].time-angle_queue[i-3].time)/M_PI * 20.0 * 180.0;
+            }else{
+                global_para.avg_v = (double)(angle_queue[i+1].angle - angle_queue[i-3].angle)
+                                    /(angle_queue[i+1].time-angle_queue[i-3].time)/M_PI * 20.0 * 180.0;
+            }
+            return tmp_a_t;
         }
     }
 
@@ -137,7 +165,8 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     std::cout <<"[sys_s_diff:sys_l_diff:l_s_diff]:"<<
             ros::Time::now().toSec()-angle_t.time<<":"<<
             ros::Time::now().toSec()-scan_time<<":"<<
-            angle_t.time-scan_msg->header.stamp.toSec()<<std::endl;
+            angle_t.time-scan_msg->header.stamp.toSec()<<":"<<
+            global_para.avg_v<<":"<<std::endl;
     /*********************************************************************************************************************************************************/
 
     double avg_v((double) global_para.avg_v / 20.0 / 180.0 * M_PI);
@@ -197,7 +226,7 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
 
         //ntheta = theta//+((0.025*3.14159265*(double)avg_v/180/20/8)+
         // ntheta = theta   +(((135+(double)(atan2(pt[1], pt[0])*180/3.14159265)))*(double)avg_v*0.025/20*3/4*3.1415926/180/270);
-        ntheta = theta+((0.025*3.14159265*(double)avg_v/180/20/8)+(((135+(double)(atan2(pt[1], pt[0])*180/3.14159265)))*(double)avg_v*0.025/20*3/4*3.1415926/180/270));
+        ntheta = theta+((0.025* M_PI *(double)avg_v/180/20/8)+(((135+(double)(atan2(pt[1], pt[0])*180/3.14159265)))*(double)avg_v*0.025/20*3/4*3.1415926/180/270));
         //fout <<ntheta *180 /3.1415926<<std::endl;
 
 
@@ -249,11 +278,7 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
 
 
     ok++;
-
-
     pub.publish(pointcloud_tmp);
-
-
 
     if(!ros::ok()){
         rotation_stop();
@@ -410,9 +435,9 @@ int main(int argc,char **argv)
     sub_laser = node.subscribe("/first",1,lCallback);
 
 
-    global_para.avg_v = 6000;
-    global_para.offset_r = 0.04000;
-    global_para.error_theta_z = 0.604000* 0.0174;
+    global_para.avg_v = 7200;
+    global_para.offset_r = 0.045000;
+    global_para.error_theta_z = 0.604000 * 0.0174;
 
     rotation_start();
 
