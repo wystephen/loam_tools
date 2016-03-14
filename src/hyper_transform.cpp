@@ -131,7 +131,7 @@ angle_with_time readOnly_time(double laser_time){
                                     /(angle_queue[i+1].time-angle_queue[i-3].time)/M_PI * 20.0 * 180.0;
             }
 
-            tmp_a_t.angle = angle_queue[i].angle + (laser_time - angle_queue[i].time) * global_para.avg_v;
+            //tmp_a_t.angle = angle_queue[i].angle + (laser_time - angle_queue[i].time) * global_para.avg_v;
 
 
             return tmp_a_t;
@@ -178,7 +178,7 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     /*********************************************************************************************************************************************************/
 
     /***********************************************************************************************************************/
-    std::cout <<"angle_t.angle:"<<angle_t.angle<<std::endl;
+    std::cout <<"angle_t.angle:"<<angle_t.angle<<"global_para.avg_v:"<<global_para.avg_v<<std::endl;
 
     double avg_v((double) global_para.avg_v / 20.0 / 180.0 * M_PI);
     angle = angle_t.angle - (angle_t.time-scan_msg->header.stamp.toSec()) * avg_v;
@@ -345,17 +345,12 @@ void serial_process()
                 if ((b > -1) && (c = ((a + b) % 256)))
                 {
                     int sum = a * 256 + b;
-                    if (sum < 7201) {
+                    if (sum < 7201 && sum >=0) {
                         if(i<5)
                             the_time -=0.01;
-                       // boost::mutex::scoped_lock(io_mutex);
-                        //std::cout << "sum:"<<sum << std::endl;io_lock.lock();
 
-                        //global_angle = (double)sum / 20 / 180 * M_PI;
-                        //writeOnly((double) sum /20.0/180 * M_PI);
                         writeOnly_time((double) sum /20.0/180 * M_PI,the_time);
 
-                        //std::cout <<"global angle:"<<global_angle<<std::endl;
                     }
                 }
             }
@@ -428,7 +423,8 @@ int main(int argc,char **argv)
 
     global_para.avg_v = 7200;
     global_para.offset_r = 0.065000;
-    global_para.error_theta_z = 0.304000 * 0.0174;
+    //global_para.error_theta_z = 0.304000 * 0.0174;
+    global_para.error_theta_z = 0.704000 * 0.0174;
 
     rotation_start();
 
