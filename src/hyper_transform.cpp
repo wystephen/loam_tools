@@ -130,11 +130,9 @@ angle_with_time readOnly_time(double laser_time){
                 global_para.avg_v = (double)(angle_queue[i+1].angle - angle_queue[i-3].angle)
                                     /(angle_queue[i+1].time-angle_queue[i-3].time)/M_PI * 20.0 * 180.0;
             }
-            if(fabs(laser_time-angle_queue[i].time)<0.005)
-                tmp_a_t.angle = angle_queue[i].angle;
-            else{
-                tmp_a_t.angle = angle_queue[i].angle + (laser_time - angle_queue[i].time) * global_para.avg_v;
-            }
+
+            tmp_a_t.angle = angle_queue[i].angle + (laser_time - angle_queue[i].time) * global_para.avg_v;
+
 
             return tmp_a_t;
         }
@@ -180,10 +178,10 @@ void lCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     /*********************************************************************************************************************************************************/
 
     /***********************************************************************************************************************/
-    std::cout <<angle_t.angle<<std::endl;
+    std::cout <<"angle_t.angle:"<<angle_t.angle<<std::endl;
 
     double avg_v((double) global_para.avg_v / 20.0 / 180.0 * M_PI);
-    angle = angle_t.angle ;//- (angle_t.time-scan_msg->header.stamp.toSec()) * avg_v;
+    angle = angle_t.angle - (angle_t.time-scan_msg->header.stamp.toSec()) * avg_v;
 while(angle < 0.0 || angle > (7200.0/20/180.0 *M_PI))
 {
     if(angle<0.0){
@@ -213,7 +211,7 @@ while(angle < 0.0 || angle > (7200.0/20/180.0 *M_PI))
     t_transform(2,2) = 1.0;
     t_transform(3,3) = 1.0;
 
-    /////////////////////////////////////////////////
+
     int x_idx = pcl::getFieldIndex(pointcloud_tmp,"x");
     int y_idx = pcl::getFieldIndex(pointcloud_tmp,"y");
     int z_idx = pcl::getFieldIndex(pointcloud_tmp,"z");
@@ -307,6 +305,8 @@ void writeOnly(double ang){
     writeLock wtlock(rwmutex);
     global_angle = ang;
 }
+
+
 void writeOnly_time(double angle,double time){
     writeLock wtlock(rwmutex);
     global_angle_with_time.angle=angle;
@@ -386,7 +386,7 @@ void seril_fast()
             b = read_buf[2] & 0xff;
             sum = a * 256 + b;
 
-            writeOnly_time((double) sum /20.0/180 * M_PI,the_time);
+            if(sum<7201) writeOnly_time((double) sum /20.0/180 * M_PI,the_time);
 
 
         }else if((read_buf[0] & 0xff) == 0x55)
@@ -395,7 +395,8 @@ void seril_fast()
             a = read_buf[0] & 0xff;
             b = read_buf[1] & 0xff;
             sum = a * 256 + b;
-            writeOnly_time((double) sum /20.0/180 * M_PI,the_time);
+            if(sum<7201)
+                writeOnly_time((double) sum /20.0/180 * M_PI,the_time);
 
 
         }
