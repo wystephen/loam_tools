@@ -17,6 +17,7 @@
 ros::Subscriber sub;
 ros::Publisher pub;
 
+//TODO:Do not use global value
 
 boost::asio::io_service io;
 boost::asio::serial_port sp(io,"/dev/ttyUSB0");
